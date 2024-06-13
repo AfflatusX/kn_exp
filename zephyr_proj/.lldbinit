@@ -1,3 +1,0 @@
-target create /home/txie/zephyrproject/zephyr/build/zephyr/zephyr.elf
-gdb-remote localhost:1234
-breakpoint set -E c++

@@ -1,1 +1,0 @@
-ln -s ~/kn_exp/zephyr_proj/board/slate ~/zephyrproject/zephyr/boards/arm

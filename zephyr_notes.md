@@ -11,7 +11,8 @@ NOTE - all the steps below assumes you're in the root dir of `kn_exp`
 3. add `kotlin.native.enabled=true` to `local.properties` to enable KN
 4. run `./gradlew publish`, it will take a while
 5. now add `bootstrap.local=true` to `local.properties`, which will tell `gradle` to use the compiler we just built instead.
-6. run `./gradlew :kotlin-native:zephyr_m55crossDist`, which will build the `zephyr_m55` related binaries.
+6. `rm kotlin-native/runtime/build/nativeStdlib/default/manifest`
+7. run `./gradlew :kotlin-native:zephyr_m55crossDist`, which will build the `zephyr_m55` related binaries.
 
 # How to test the kotlin native compiler
 
