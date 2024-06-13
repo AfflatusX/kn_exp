@@ -4,10 +4,15 @@ import java.io.File
 project.removePrePushHookIfExists()
 
 fun Project.removePrePushHookIfExists() {
-    val prePushHookPath = rootProject.getGitDirectory().toPath()
-        .resolve("hooks")
-        .resolve("pre-push")
-    java.nio.file.Files.deleteIfExists(prePushHookPath)
+    try {
+        val prePushHookPath = rootProject.getGitDirectory().toPath()
+            .resolve("hooks")
+            .resolve("pre-push")
+        java.nio.file.Files.deleteIfExists(prePushHookPath)
+    } catch (e: Exception) {
+        println("unable to remove pre push hook: ${e}")
+    }
+    
 }
 
 fun Project.getGitDirectory(): File {

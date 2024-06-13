@@ -1,5 +1,6 @@
 # Things you need to install (please add to the list if you encounter any missing dependencies)
-* brew install llvm
+* brew install llvm openjdk@11
+* echo 'export PATH="/opt/homebrew/opt/openjdk@11/bin:$PATH"' >> ~/.zshrc
 
 # How to get things building
 
@@ -11,7 +12,6 @@ NOTE - all the steps below assumes you're in the root dir of `kn_exp`
 4. run `./gradlew publish`, it will take a while
 5. now add `bootstrap.local=true` to `local.properties`, which will tell `gradle` to use the compiler we just built instead.
 6. run `./gradlew :kotlin-native:zephyr_m55crossDist`, which will build the `zephyr_m55` related binaries.
-7. when you re run step 6, it sometimes complain about `trove4j.jar` permission denied, simply run `chmod +w kotlin-native/dist/konan/lib/trove4j.jar` once to reset the permission. This is a known issue that has been resolved in mainline.
 
 # How to test the kotlin native compiler
 
@@ -26,14 +26,7 @@ This command invokes the compiler you just built from previous step against a ve
 
 # Issues
 
-## unbox{type} functions are not generated in llvm code
 
-### Repro
-after running `kn_compile.sh` script mentioned above, open `out.Codegen.ll` and search for `define float @Kotlin_unboxFloat`, you will notice it has instructions, but if you inspect `out.ll`, all those functions only have `@llvm.trap
-
-however, if we change the `-target zephyr_m55` to `-target linux_arm64` for example, and run `kn_compile.sh` again, we can see `Kotlin_unboxFloat` exists in both `ll` files.
-
-Some steps ran after code gen removed these implementations for some reason - also the `out.ll` is significantly larger in the case of linux target.
 
 # Important Files
 * /home/txie/kn_exp/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/BitcodeCompiler.kt 
