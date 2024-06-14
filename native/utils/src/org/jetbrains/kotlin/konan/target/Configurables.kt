@@ -141,11 +141,12 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
     val additionalInterfaces: List<String>
         get() {
             val subPaths = listOf("/include", "/include/c++/12.2.0", "/include/c++/12.2.0/arm-zephyr-eabi")
-            return subPaths.map { it -> this.absoluteTargetToolchain + it }
+            return subPaths.map { this.absoluteTargetToolchain + it }
         }
     override val absoluteTargetToolchain: String
         get() {
-            val toolchainRoot = "${this.repoRoot}/build/sdk/output/arm-zephyr-eabi/arm-zephyr-eabi"
+            var target_short_name = this.target.name.removePrefix("zephyr_")
+            val toolchainRoot = "${this.repoRoot}/build/sdk/${target_short_name}/output/arm-zephyr-eabi/arm-zephyr-eabi"
             return toolchainRoot
         }
     override val absoluteTargetSysRoot get() = this.absoluteTargetToolchain
