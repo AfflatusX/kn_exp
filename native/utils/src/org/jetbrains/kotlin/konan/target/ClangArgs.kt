@@ -10,19 +10,19 @@ import org.jetbrains.kotlin.konan.file.File
 internal object Android {
     const val API = "21"
     private val architectureMap = mapOf(
-            KonanTarget.ANDROID_X86 to "x86",
-            KonanTarget.ANDROID_X64 to "x86_64",
-            KonanTarget.ANDROID_ARM32 to "arm",
-            KonanTarget.ANDROID_ARM64 to "arm64"
+        KonanTarget.ANDROID_X86 to "x86",
+        KonanTarget.ANDROID_X64 to "x86_64",
+        KonanTarget.ANDROID_ARM32 to "arm",
+        KonanTarget.ANDROID_ARM64 to "arm64"
     )
 
     fun architectureDirForTarget(target: KonanTarget) =
-            "android-${API}/arch-${architectureMap.getValue(target)}"
+        "android-${API}/arch-${architectureMap.getValue(target)}"
 }
 
 sealed class ClangArgs(
-        private val configurables: Configurables,
-        private val forJni: Boolean
+    private val configurables: Configurables,
+    private val forJni: Boolean,
 ) {
 
     private val absoluteTargetToolchain = configurables.absoluteTargetToolchain
@@ -34,45 +34,46 @@ sealed class ClangArgs(
     // TODO: Should be dropped in favor of real MSVC target.
     private val argsForWindowsJni = forJni && target == KonanTarget.MINGW_X64
 
-    private val clangArgsSpecificForKonanSources : List<String>
+    private val clangArgsSpecificForKonanSources: List<String>
         get() {
             val konanOptions = listOfNotNull(
-                    target.architecture.name.takeIf { target != KonanTarget.WATCHOS_ARM64 },
-                    "ARM32".takeIf { target == KonanTarget.WATCHOS_ARM64 },
-                    target.family.name.takeIf { target.family != Family.MINGW },
-                    "WINDOWS".takeIf { target.family == Family.MINGW },
-                    "MACOSX".takeIf { target.family == Family.OSX },
+                target.architecture.name.takeIf { target != KonanTarget.WATCHOS_ARM64 },
+                "ARM32".takeIf { target == KonanTarget.WATCHOS_ARM64 },
+                target.family.name.takeIf { target.family != Family.MINGW },
+                "WINDOWS".takeIf { target.family == Family.MINGW },
+                "MACOSX".takeIf { target.family == Family.OSX },
 
-                    "NO_64BIT_ATOMIC".takeUnless { target.supports64BitAtomics() },
-                    "NO_UNALIGNED_ACCESS".takeUnless { target.supportsUnalignedAccess() },
-                    "FORBID_BUILTIN_MUL_OVERFLOW".takeUnless { target.supports64BitMulOverflow() },
+                "NO_64BIT_ATOMIC".takeUnless { target.supports64BitAtomics() },
+                "NO_UNALIGNED_ACCESS".takeUnless { target.supportsUnalignedAccess() },
+                "FORBID_BUILTIN_MUL_OVERFLOW".takeUnless { target.supports64BitMulOverflow() },
 
-                    "OBJC_INTEROP".takeIf { target.supportsObjcInterop() },
-                    "HAS_FOUNDATION_FRAMEWORK".takeIf { target.hasFoundationFramework() },
-                    "HAS_UIKIT_FRAMEWORK".takeIf { target.hasUIKitFramework() },
-                    "REPORT_BACKTRACE_TO_IOS_CRASH_LOG".takeIf { target.supportsIosCrashLog() },
-                    "NEED_SMALL_BINARY".takeIf { target.needSmallBinary() },
-                    "SUPPORTS_GRAND_CENTRAL_DISPATCH".takeIf { target.supportsGrandCentralDispatch },
-                    "SUPPORTS_SIGNPOSTS".takeIf { target.supportsSignposts },
+                "OBJC_INTEROP".takeIf { target.supportsObjcInterop() },
+                "HAS_FOUNDATION_FRAMEWORK".takeIf { target.hasFoundationFramework() },
+                "HAS_UIKIT_FRAMEWORK".takeIf { target.hasUIKitFramework() },
+                "REPORT_BACKTRACE_TO_IOS_CRASH_LOG".takeIf { target.supportsIosCrashLog() },
+                "NEED_SMALL_BINARY".takeIf { target.needSmallBinary() },
+                "SUPPORTS_GRAND_CENTRAL_DISPATCH".takeIf { target.supportsGrandCentralDispatch },
+                "SUPPORTS_SIGNPOSTS".takeIf { target.supportsSignposts },
             ).map { "KONAN_$it=1" }
             val otherOptions = listOfNotNull(
-                    "USE_ELF_SYMBOLS=1".takeIf { target.binaryFormat() == BinaryFormat.ELF },
-                    "ELFSIZE=${target.pointerBits()}".takeIf { target.binaryFormat() == BinaryFormat.ELF },
-                    "MACHSIZE=${target.pointerBits()}".takeIf { target.binaryFormat() == BinaryFormat.MACH_O },
-                    "__ANDROID__".takeIf { target.family == Family.ANDROID },
-                    "USE_PE_COFF_SYMBOLS=1".takeIf { target.binaryFormat() == BinaryFormat.PE_COFF },
-                    "UNICODE".takeIf { target.family == Family.MINGW },
-                    "USE_WINAPI_UNWIND=1".takeIf { target.supportsWinAPIUnwind() },
-                    "USE_GCC_UNWIND=1".takeIf { target.supportsGccUnwind() },
-                    "NO_STACKTRACE_SUPPORT".takeIf { target.family == Family.ZEPHYR },
-                    // Clang 11 does not support this attribute. We don't need to handle it properly,
-                    // so just undefine it.
-                    "NS_FORMAT_ARGUMENT(A)=".takeIf { target.family.isAppleFamily },
+                "USE_ELF_SYMBOLS=1".takeIf { target.binaryFormat() == BinaryFormat.ELF },
+                "ELFSIZE=${target.pointerBits()}".takeIf { target.binaryFormat() == BinaryFormat.ELF },
+                "MACHSIZE=${target.pointerBits()}".takeIf { target.binaryFormat() == BinaryFormat.MACH_O },
+                "__ANDROID__".takeIf { target.family == Family.ANDROID },
+                "USE_PE_COFF_SYMBOLS=1".takeIf { target.binaryFormat() == BinaryFormat.PE_COFF },
+                "UNICODE".takeIf { target.family == Family.MINGW },
+                "USE_WINAPI_UNWIND=1".takeIf { target.supportsWinAPIUnwind() },
+                "USE_GCC_UNWIND=1".takeIf { target.supportsGccUnwind() },
+                "NO_STACKTRACE_SUPPORT".takeIf { target.family == Family.ZEPHYR },
+                // Clang 11 does not support this attribute. We don't need to handle it properly,
+                // so just undefine it.
+                "NS_FORMAT_ARGUMENT(A)=".takeIf { target.family.isAppleFamily },
             )
             return (konanOptions + otherOptions).map { "-D$it" }
         }
 
     private val binDir = "$absoluteTargetToolchain/bin"
+
     // TODO: Use buildList
     private val commonClangArgs: List<String> = mutableListOf<List<String>>().apply {
         // Currently, MinGW toolchain contains old LLVM 8, and -fuse-ld=lld picks linker from there.
@@ -96,13 +97,14 @@ sealed class ClangArgs(
             argsForWindowsJni -> "x86_64-pc-windows-msvc"
             configurables is AppleConfigurables -> {
                 targetTriple.copy(
-                        os = "${targetTriple.os}${configurables.osVersionMin}"
+                    os = "${targetTriple.os}${configurables.osVersionMin}"
                 ).toString()
             }
             else -> configurables.targetTriple.toString()
         }
         if (configurables is ZephyrConfigurables) {
-            add(listOf("-target", "thumb", "-mtp=soft", "-mfloat-abi=soft", "-mcpu=cortex-m3", "-c", "-D__GLIBC_USE=0"))
+            add(listOf("-c"))
+            add(configurables.clangFlags)
         } else {
             add(listOf("-target", targetString))
         }
@@ -171,38 +173,37 @@ sealed class ClangArgs(
 
     private val specificClangArgs: List<String> = when (target) {
         KonanTarget.LINUX_ARM32_HFP -> listOf(
-                "-mfpu=vfp", "-mfloat-abi=hard"
+            "-mfpu=vfp", "-mfloat-abi=hard"
         )
 
-       KonanTarget.WATCHOS_ARM32 -> listOf(
-                // Force generation of ARM instruction set instead of Thumb-2.
-                // It allows LLVM ARM backend to encode bigger offsets in BL instruction,
-                // thus allowing to generate a slightly bigger binaries.
-                // See KT-37368.
-                "-marm"
+        KonanTarget.WATCHOS_ARM32 -> listOf(
+            // Force generation of ARM instruction set instead of Thumb-2.
+            // It allows LLVM ARM backend to encode bigger offsets in BL instruction,
+            // thus allowing to generate a slightly bigger binaries.
+            // See KT-37368.
+            "-marm"
         )
 
         KonanTarget.ANDROID_ARM32, KonanTarget.ANDROID_ARM64,
-        KonanTarget.ANDROID_X86, KonanTarget.ANDROID_X64 -> {
+        KonanTarget.ANDROID_X86, KonanTarget.ANDROID_X64,
+        -> {
             val clangTarget = targetTriple.withoutVendor()
             val architectureDir = Android.architectureDirForTarget(target)
             val toolchainSysroot = "$absoluteTargetToolchain/sysroot"
             listOf(
-                    "-D__ANDROID_API__=${Android.API}",
-                    "--sysroot=$absoluteTargetSysRoot/$architectureDir",
-                    "-I$toolchainSysroot/usr/include/c++/v1",
-                    "-I$toolchainSysroot/usr/include",
-                    "-I$toolchainSysroot/usr/include/$clangTarget"
+                "-D__ANDROID_API__=${Android.API}",
+                "--sysroot=$absoluteTargetSysRoot/$architectureDir",
+                "-I$toolchainSysroot/usr/include/c++/v1",
+                "-I$toolchainSysroot/usr/include",
+                "-I$toolchainSysroot/usr/include/$clangTarget"
             )
         }
 
-        KonanTarget.ZEPHYR_M55 -> {
+        KonanTarget.ZEPHYR_QEMU, KonanTarget.ZEPHYR_RT595 -> {
             if (configurables is ZephyrConfigurables) {
-                var toolchainRoot = configurables.localToolchainRoot
-                var includes = configurables.localToolchainInterface
-                includes.map {"-I$toolchainRoot$it" }
+                configurables.additionalInterfaces.map { "-I$it" }
             } else {
-                throw Exception("expecting zephyr configurables for zephyr_55 target")
+                throw Exception("expecting zephyr configurables for zephyr target")
             }
         }
 
@@ -221,23 +222,23 @@ sealed class ClangArgs(
      */
     val clangXXArgs: Array<String> = clangArgs + when (configurables) {
         is AppleConfigurables -> arrayOf(
-                "-stdlib=libc++",
-                // KT-57848
-                "-Dat_quick_exit=atexit", "-Dquick_exit=exit",
+            "-stdlib=libc++",
+            // KT-57848
+            "-Dat_quick_exit=atexit", "-Dquick_exit=exit",
         )
         else -> emptyArray()
     }
 
     val clangArgsForKonanSources =
-            clangXXArgs + clangArgsSpecificForKonanSources
+        clangXXArgs + clangArgsSpecificForKonanSources
 
     private val libclangSpecificArgs =
-            // libclang works not exactly the same way as the clang binary and
-            // (in particular) uses different default header search path.
-            // See e.g. http://lists.llvm.org/pipermail/cfe-dev/2013-November/033680.html
-            // We workaround the problem with -isystem flag below.
-            // TODO: Revise after update to LLVM 10.
-            listOf("-isystem", "$absoluteLlvmHome/lib/clang/${configurables.llvmVersion}/include")
+    // libclang works not exactly the same way as the clang binary and
+    // (in particular) uses different default header search path.
+    // See e.g. http://lists.llvm.org/pipermail/cfe-dev/2013-November/033680.html
+    // We workaround the problem with -isystem flag below.
+        // TODO: Revise after update to LLVM 10.
+        listOf("-isystem", "$absoluteLlvmHome/lib/clang/${configurables.llvmVersion}/include")
 
     /**
      * libclang args for plain C and Objective-C.
@@ -245,7 +246,7 @@ sealed class ClangArgs(
      * Note that it's different from [clangArgs].
      */
     val libclangArgs: List<String> =
-            libclangSpecificArgs + clangArgs
+        libclangSpecificArgs + clangArgs
 
     /**
      * libclang args for C++.
@@ -253,16 +254,13 @@ sealed class ClangArgs(
      * Note that it's different from [clangXXArgs].
      */
     val libclangXXArgs: List<String> =
-            libclangSpecificArgs + clangXXArgs
+        libclangSpecificArgs + clangXXArgs
 
-    private val targetClangCmd
-            = listOf("${absoluteLlvmHome}/bin/clang") + clangArgs
+    private val targetClangCmd = listOf("${absoluteLlvmHome}/bin/clang") + clangArgs
 
-    private val targetClangXXCmd
-            = listOf("${absoluteLlvmHome}/bin/clang++") + clangXXArgs
+    private val targetClangXXCmd = listOf("${absoluteLlvmHome}/bin/clang++") + clangXXArgs
 
-    private val targetArCmd
-            = listOf("${absoluteLlvmHome}/bin/llvm-ar")
+    private val targetArCmd = listOf("${absoluteLlvmHome}/bin/llvm-ar")
 
 
     fun clangC(vararg userArgs: String) = targetClangCmd + userArgs.asList()
@@ -286,8 +284,8 @@ sealed class ClangArgs(
 
         val hostCompilerArgsForJni: Array<String> by lazy {
             listOf("", HostManager.jniHostPlatformIncludeDir)
-                    .map { "-I$jdkDir/include/$it" }
-                    .toTypedArray()
+                .map { "-I$jdkDir/include/$it" }
+                .toTypedArray()
         }
     }
 

@@ -41,7 +41,8 @@ sealed class KonanTarget(override val name: String, val family: Family, val arch
 
     object LINUX_ARM32_HFP : KonanTarget("linux_arm32_hfp", Family.LINUX, Architecture.ARM32)
 
-    object ZEPHYR_M55 :  KonanTarget("zephyr_m55", Family.ZEPHYR, Architecture.ARM32)
+    object ZEPHYR_QEMU : KonanTarget("zephyr_qemu", Family.ZEPHYR, Architecture.ARM32)
+    object ZEPHYR_RT595 : KonanTarget("zephyr_rt595", Family.ZEPHYR, Architecture.ARM32)
 
     /**
      * Removed targets. References are left just to provide a readable diagnostic message (as opposed to
@@ -85,7 +86,8 @@ sealed class KonanTarget(override val name: String, val family: Family, val arch
                 LINUX_X64,
                 MINGW_X64,
                 MACOS_X64, MACOS_ARM64,
-                LINUX_ARM64, LINUX_ARM32_HFP, ZEPHYR_M55
+                LINUX_ARM64, LINUX_ARM32_HFP,
+                ZEPHYR_QEMU, ZEPHYR_RT595
             ).associateBy { it.name }
         }
 

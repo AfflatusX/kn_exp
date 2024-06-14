@@ -16,11 +16,12 @@
 
 package org.jetbrains.kotlin.konan.target
 
-import org.jetbrains.kotlin.konan.properties.*
+import org.jetbrains.kotlin.konan.properties.TargetableExternalStorage
+import java.io.File
 
 interface RelocationModeFlags : TargetableExternalStorage {
     val dynamicLibraryRelocationMode get() = targetString("dynamicLibraryRelocationMode").mode()
-    val staticLibraryRelocationMode get()  = targetString("staticLibraryRelocationMode").mode()
+    val staticLibraryRelocationMode get() = targetString("staticLibraryRelocationMode").mode()
     val executableRelocationMode get() = targetString("executableRelocationMode").mode()
 
     @Suppress("DEPRECATION")
@@ -39,14 +40,14 @@ interface RelocationModeFlags : TargetableExternalStorage {
 }
 
 interface ClangFlags : TargetableExternalStorage, RelocationModeFlags {
-    val clangFlags get()        = targetList("clangFlags")
-    val clangNooptFlags get()   = targetList("clangNooptFlags")
-    val clangOptFlags get()     = targetList("clangOptFlags")
-    val clangDebugFlags get()   = targetList("clangDebugFlags")
+    val clangFlags get() = targetList("clangFlags")
+    val clangNooptFlags get() = targetList("clangNooptFlags")
+    val clangOptFlags get() = targetList("clangOptFlags")
+    val clangDebugFlags get() = targetList("clangDebugFlags")
 }
 
 interface LldFlags : TargetableExternalStorage {
-    val lldFlags get()      = targetList("lld")
+    val lldFlags get() = targetList("lld")
 }
 
 interface Configurables : TargetableExternalStorage, RelocationModeFlags {
@@ -54,8 +55,8 @@ interface Configurables : TargetableExternalStorage, RelocationModeFlags {
     val target: KonanTarget
     val targetTriple: TargetTriple
         get() = targetString("targetTriple")
-                ?.let(TargetTriple.Companion::fromString)
-                ?: error("quadruple for $target is not set.")
+            ?.let(TargetTriple.Companion::fromString)
+            ?: error("quadruple for $target is not set.")
 
     val llvmHome get() = hostString("llvmHome")
     val llvmVersion get() = hostString("llvmVersion")
@@ -88,6 +89,7 @@ interface Configurables : TargetableExternalStorage, RelocationModeFlags {
 
 interface ConfigurablesWithEmulator : Configurables {
     val emulatorDependency get() = hostTargetString("emulatorDependency")
+
     // TODO: We need to find a way to represent absolute path in properties.
     //  In case of QEMU, absolute path to dynamic linker should be specified.
     val emulatorExecutable get() = hostTargetString("emulatorExecutable")
@@ -136,11 +138,37 @@ interface AndroidConfigurables : Configurables, ClangFlags
 interface WasmConfigurables : Configurables, ClangFlags, LldFlags
 
 interface ZephyrConfigurables : Configurables, ClangFlags {
-    val localToolchainRoot get() =
-        "${System.getenv("REPO_ROOT")!!}${targetString("localToolchainRoot")}"
-    val localToolchainInterface get() = targetList("localToolchainInterfaces")
-    val boardSpecificClangFlags get() = targetList("boardSpecificClangFlags")
-    val targetAbi get() = targetString("targetAbi")
-    override val absoluteTargetToolchain get() = targetString("localToolchainRoot")!!
-    override val absoluteTargetSysRoot get() = targetString("localToolchainRoot")!!
+    val additionalInterfaces: List<String>
+        get() {
+            val subPaths = listOf("/include", "/include/c++/12.2.0", "/include/c++/12.2.0/arm-zephyr-eabi")
+            return subPaths.map { it -> this.absoluteTargetToolchain + it }
+        }
+    override val absoluteTargetToolchain: String
+        get() {
+            val toolchainRoot = "${this.repoRoot}/build/sdk/output/arm-zephyr-eabi/arm-zephyr-eabi"
+            return toolchainRoot
+        }
+    override val absoluteTargetSysRoot get() = this.absoluteTargetToolchain
+
+    val repoRoot
+        get() = System.getenv("REPO_ROOT")
+            ?: throw Exception("REPO_ROOT env var isn't set. Make sure you are compiling kotlin compiler from script/build_kotlin_compiler.sh")
+
+    override val clangFlags: List<String>
+        get() {
+            val shared = listOf(
+                "-target",
+                "thumb",
+                "-mtp=soft",
+                "-D__GLIBC_USE=0",
+                "-Wno-deprecated-declarations",
+                "-D_POSIX_THREADS=1",
+                "-D_GNU_SOURCE=1"
+            );
+            val base = super.clangFlags;
+            // this is for dev purpose, in case we need to tweak the
+            // clang flags without re-publishing
+            val temp = File(this.repoRoot + "/scripts", "kotlin_compiler_extra_clang_flags").readLines().filter { it.isNotEmpty() }
+            return shared + base + temp
+        }
 }

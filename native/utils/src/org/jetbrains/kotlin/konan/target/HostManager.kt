@@ -6,7 +6,6 @@
 package org.jetbrains.kotlin.konan.target
 
 import org.jetbrains.kotlin.konan.target.KonanTarget.*
-import java.lang.Exception
 
 @Suppress("DEPRECATION") // Uses deprecated SubTargetProvider in other deprecated APIs
 open class HostManager() {
@@ -16,14 +15,14 @@ open class HostManager() {
     @Deprecated(level = DeprecationLevel.HIDDEN, message = "Kept for binary compatibility of Gradle plugins")
     constructor(
         subTargetProvider: SubTargetProvider = SubTargetProvider.NoSubTargets,
-        experimental: Boolean = false
+        experimental: Boolean = false,
     ) : this()
 
     @Suppress("UNUSED_PARAMETER")
     @Deprecated(level = DeprecationLevel.HIDDEN, message = "Kept for binary compatibility of Gradle plugins")
     constructor(
         distribution: Distribution,
-        experimental: Boolean = false
+        experimental: Boolean = false,
     ) : this()
 
     val targetValues: List<KonanTarget> by lazy { KonanTarget.predefinedTargets.values.toList() }
@@ -57,7 +56,8 @@ open class HostManager() {
         ANDROID_X64,
         ANDROID_ARM32,
         ANDROID_ARM64,
-        ZEPHYR_M55,
+        ZEPHYR_QEMU,
+        ZEPHYR_RT595
     )
 
     private val appleTargets = setOf(
@@ -122,7 +122,8 @@ open class HostManager() {
         val jniHostPlatformIncludeDir: String
             get() = when (host) {
                 MACOS_X64,
-                MACOS_ARM64 -> "darwin"
+                MACOS_ARM64,
+                -> "darwin"
                 LINUX_X64 -> "linux"
                 MINGW_X64 -> "win32"
                 else -> throw TargetSupportException("Unknown host: $host.")
