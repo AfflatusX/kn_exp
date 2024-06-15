@@ -171,8 +171,8 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
                 "-mtp=soft",
                 "-D__GLIBC_USE=0",
                 // TODO: re-enable this once include issue resolved
-//                "-Wno-deprecated-declarations",
-//                "-D_POSIX_THREADS=1",
+                "-Wno-deprecated-declarations",
+                "-D_POSIX_THREADS=1",
 //                "-D_GNU_SOURCE=1"
             );
             val base = super.clangFlags;

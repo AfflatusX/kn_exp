@@ -151,10 +151,7 @@ __gthread_mutex_destroy (__gthread_mutex_t *__mutex)
 static inline int
 __gthread_mutex_lock (__gthread_mutex_t *__mutex)
 {
-    int mtx_lock_res = mtx_lock(__mutex);
-    int compare_to = thrd_success;
-
-    return mtx_lock_res != compare_to;
+    return mtx_lock(__mutex) != thrd_success;
 }
 
 static inline int
@@ -185,9 +182,7 @@ __gthread_recursive_mutex_init_function (__gthread_recursive_mutex_t *__mutex)
 static inline int
 __gthread_recursive_mutex_lock (__gthread_recursive_mutex_t *__mutex)
 {
-  int res = mtx_lock(__mutex);
-  int cmp = thrd_success;
-  return res != thrd_success;
+  return mtx_lock(__mutex) != thrd_success;
 }
 
 static inline int

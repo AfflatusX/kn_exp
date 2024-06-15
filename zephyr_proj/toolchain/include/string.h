@@ -67,8 +67,6 @@ int	 timingsafe_memcmp (const void *, const void *, size_t);
 void *	 memccpy (void *__restrict, const void *__restrict, int, size_t);
 #endif
 
-void *	 memmem (const void *, size_t, const void *, size_t);
-
 #if __GNU_VISIBLE
 void *	 mempcpy (void *, const void *, size_t);
 void *	 memmem (const void *, size_t, const void *, size_t);
