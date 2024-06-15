@@ -531,7 +531,6 @@ extern "C" {
 
 #endif /* __CYGWIN__ */
 
-
 #ifdef __cplusplus
 }
 #endif

@@ -144,18 +144,18 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
                 "/include",
                 "/include/c++/12.2.0",
                 // TODO: re-enable this once include issue resolved
-//                "/include/c++/12.2.0/arm-zephyr-eabi/arm-zephyr-eabi",
+                // "/include/c++/12.2.0/arm-zephyr-eabi",
                 "/include/c++/12.2.0/arm-zephyr-eabi/thumb/v8-m.main+dp/softfp"
             )
             return subPaths.map { this.absoluteTargetToolchain + it }
         }
     override val absoluteTargetToolchain: String
         get() {
-            return this.repoRoot + "/kotlin/zephyr_proj/toolchain"
+            return this.repoRoot;
             // TODO: re-enable this once include issue resolved
-//            var target_short_name = this.target.name.removePrefix("zephyr_")
-//            val toolchainRoot = "${this.repoRoot}/build/sdk/${target_short_name}/output/arm-zephyr-eabi/arm-zephyr-eabi"
-//            return toolchainRoot
+        //    var target_short_name = this.target.name.removePrefix("zephyr_")
+        //    val toolchainRoot = "${this.repoRoot}/build/sdk/${target_short_name}/output/arm-zephyr-eabi/arm-zephyr-eabi"
+        //    return toolchainRoot
         }
     override val absoluteTargetSysRoot get() = this.absoluteTargetToolchain
 
