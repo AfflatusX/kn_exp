@@ -145,7 +145,7 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
                 "/include/c++/12.2.0",
                 // TODO: re-enable this once include issue resolved
                 // "/include/c++/12.2.0/arm-zephyr-eabi",
-                "/include/c++/12.2.0/arm-zephyr-eabi/thumb/v8-m.main+dp/softfp"
+                "/include/c++/12.2.0/arm-zephyr-eabi"
             )
             return subPaths.map { this.absoluteTargetToolchain + it }
         }
@@ -169,11 +169,6 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
                 "-target",
                 "thumb",
                 "-mtp=soft",
-                "-D__GLIBC_USE=0",
-                // TODO: re-enable this once include issue resolved
-                "-Wno-deprecated-declarations",
-                "-D_POSIX_THREADS=1",
-//                "-D_GNU_SOURCE=1"
             );
             val base = super.clangFlags;
             // this is for dev purpose, in case we need to tweak the

@@ -47,6 +47,20 @@ open class HostManager() {
         return targets[resolveAlias(name)] ?: throw TargetSupportException("Unknown target name: $name")
     }
 
+    private val zephyrTargets = setOf(
+        ZEPHYR_QEMU,
+        ZEPHYR_RT595,
+        LINUX_X64,
+    )
+
+    private val appleMinTargets = setOf(
+        MACOS_ARM64
+    )
+
+    private val linuxMinTargets = setOf(
+        LINUX_X64
+    )
+
     private val commonTargets = setOf(
         LINUX_X64,
         LINUX_ARM32_HFP,
@@ -77,10 +91,10 @@ open class HostManager() {
     )
 
     val enabledByHost: Map<KonanTarget, Set<KonanTarget>> = mapOf(
-        LINUX_X64 to commonTargets,
+        LINUX_X64 to zephyrTargets + linuxMinTargets,
         MINGW_X64 to commonTargets,
         MACOS_X64 to commonTargets + appleTargets,
-        MACOS_ARM64 to commonTargets + appleTargets
+        MACOS_ARM64 to commonTargets + appleMinTargets
     )
 
     val enabled: List<KonanTarget>
