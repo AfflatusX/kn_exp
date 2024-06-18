@@ -25,7 +25,7 @@ public:
     static GlobalData& Instance() noexcept;
 
     // init() can only be called once.
-    static void init();
+    static void init() noexcept;
     static void waitInitialized() noexcept;
 
     ThreadRegistry& threadRegistry() noexcept { return threadRegistry_; }

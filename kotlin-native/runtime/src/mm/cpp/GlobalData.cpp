@@ -70,7 +70,7 @@ mm::GlobalData& mm::GlobalData::Instance() noexcept {
 }
 
 // static
-void mm::GlobalData::init() {
+void mm::GlobalData::init() noexcept {
     if (compiler::globalDataLazyInit()) {
         std::unique_lock guard{globalDataLazyInitMutex};
         constructGlobalDataInstance();
