@@ -91,10 +91,10 @@ open class HostManager() {
     )
 
     val enabledByHost: Map<KonanTarget, Set<KonanTarget>> = mapOf(
-        LINUX_X64 to zephyrTargets + linuxMinTargets,
+        LINUX_X64 to commonTargets,
         MINGW_X64 to commonTargets,
         MACOS_X64 to commonTargets + appleTargets,
-        MACOS_ARM64 to commonTargets + appleMinTargets
+        MACOS_ARM64 to commonTargets + appleTargets
     )
 
     val enabled: List<KonanTarget>
