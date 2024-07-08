@@ -153,15 +153,15 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
         get() {
             return this.repoRoot;
             // TODO: re-enable this once include issue resolved
-        //    var target_short_name = this.target.name.removePrefix("zephyr_")
-        //    val toolchainRoot = "${this.repoRoot}/build/sdk/${target_short_name}/output/arm-zephyr-eabi/arm-zephyr-eabi"
-        //    return toolchainRoot
+            //    var target_short_name = this.target.name.removePrefix("zephyr_")
+            //    val toolchainRoot = "${this.repoRoot}/build/sdk/${target_short_name}/output/arm-zephyr-eabi/arm-zephyr-eabi"
+            //    return toolchainRoot
         }
     override val absoluteTargetSysRoot get() = this.absoluteTargetToolchain
 
     val repoRoot
         get() = System.getenv("REPO_ROOT")
-            ?: throw Exception("REPO_ROOT env var isn't set. Make sure you are compiling kotlin compiler from script/build_kotlin_compiler.sh")
+            ?: throw Exception("REPO_ROOT env var isn't set. Please set it to the folder container kotlin checkout")
 
     override val clangFlags: List<String>
         get() {
@@ -173,7 +173,7 @@ interface ZephyrConfigurables : Configurables, ClangFlags {
             val base = super.clangFlags;
             // this is for dev purpose, in case we need to tweak the
             // clang flags without re-publishing
-            val temp = File(this.repoRoot + "/scripts", "kotlin_compiler_extra_clang_flags").readLines().filter { it.isNotEmpty() }
+            val temp = File(this.repoRoot + "/kotlin", "zephyr_extra_clang_flags").readLines().filter { it.isNotEmpty() }
             return shared + base + temp
         }
 }
