@@ -154,6 +154,8 @@ internal fun createLTOFinalPipelineConfig(
         else -> null
     }
 
+    println("LLVM pipeline config: [triple: $targetTriple], [cpuModel: $cpuModel], [cpuFeatures: $cpuFeatures], [optimizationLevel: $optimizationLevel], [sizeLevel: $sizeLevel], [codegenOptimizationLevel: $codegenOptimizationLevel]")
+
     return LlvmPipelineConfig(
             targetTriple,
             cpuModel,
