@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.library.metadata.NullFlexibleTypeDeserializer
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.test.backend.ir.IrBackendFacade
 import org.jetbrains.kotlin.test.backend.ir.IrBackendInput
+import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.SKIP_DESERIALIZED_IR_TEXT_DUMP
 import org.jetbrains.kotlin.test.frontend.classic.ModuleDescriptorProvider
 import org.jetbrains.kotlin.test.frontend.classic.moduleDescriptorProvider
 import org.jetbrains.kotlin.test.frontend.fir.getAllNativeDependenciesPaths
@@ -42,7 +43,7 @@ abstract class AbstractNativeKlibBackendFacade(
     testServices: TestServices
 ) : IrBackendFacade<BinaryArtifacts.KLib>(testServices, ArtifactKinds.KLib) {
     final override fun shouldRunAnalysis(module: TestModule): Boolean {
-        return module.backendKind == inputKind
+        return module.backendKind == inputKind && SKIP_DESERIALIZED_IR_TEXT_DUMP !in module.directives
     }
 
     final override fun transform(module: TestModule, inputArtifact: IrBackendInput): BinaryArtifacts.KLib {
@@ -113,7 +114,6 @@ class ClassicNativeKlibBackendFacade(testServices: TestServices) : AbstractNativ
         module: TestModule,
         inputArtifact: IrBackendInput.NativeBackendInput,
     ): SerializerOutput<KotlinLibrary> {
-        testServices.assertions.assertTrue(inputArtifact.firMangler == null) { "unexpected Fir mangler" }
         testServices.assertions.assertTrue(inputArtifact.metadataSerializer == null) { "unexpected single-file metadata serializer" }
 
         val frontendOutput = testServices.dependencyProvider.getArtifact(module, FrontendKinds.ClassicFrontend)

@@ -25,18 +25,18 @@ public class SirParentProviderImpl(
 
     override fun KaDeclarationSymbol.getSirParent(ktAnalysisSession: KaSession): SirDeclarationContainer {
         val symbol = this@getSirParent
-        val parentSymbol = with(ktAnalysisSession) { symbol.getContainingSymbol() }
+        val parentSymbol = with(ktAnalysisSession) { symbol.containingDeclaration }
 
         return if (parentSymbol == null) {
             // top level function. -> parent is either extension for package, of plain module in case of <root> package
             val packageFqName = when (symbol) {
-                is KaNamedClassOrObjectSymbol -> symbol.classId?.packageFqName
+                is KaNamedClassSymbol -> symbol.classId?.packageFqName
                 is KaCallableSymbol -> symbol.callableId?.packageName
                 is KaTypeAliasSymbol -> symbol.classId?.packageFqName
                 else -> null
             } ?: error("encountered unknown origin: $symbol. This exception should be reworked during KT-65980")
 
-            val ktModule = with(ktAnalysisSession) { symbol.getContainingModule() }
+            val ktModule = with(ktAnalysisSession) { symbol.containingModule }
             val sirModule = with(sirSession) { ktModule.sirModule() }
             return if (packageFqName.isRoot) {
                 sirModule
@@ -48,7 +48,7 @@ public class SirParentProviderImpl(
                         SirImport(
                             moduleName = enumAsPackage.containingModule().name,
                             // so the user will have access to the Fully Qualified Name for declaration without importing additional modules
-                            isExported = true,
+                            mode = SirImport.Mode.Exported,
                         )
                     )
                     sirModule.addChild {

@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.fromSymbolOwner
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrTypeParameterSymbolImpl
@@ -341,7 +342,7 @@ class IrBuiltInsOverFir(
          * As a possible way to fix it we can move `init` section of builtins into the separate function for late initialization and call
          *   for it after Fir2IrComponentsStorage is fully initialized
          */
-        val firClassSymbol = session.symbolProvider.getRegularClassSymbolByClassId(StandardClassIds.Annotations.IntrinsicConstEvaluation)
+        val firClassSymbol = session.getRegularClassSymbolByClassId(StandardClassIds.Annotations.IntrinsicConstEvaluation)
 
         val classSymbol = if (firClassSymbol == null) {
             val irClass = createIntrinsicConstEvaluationClass()

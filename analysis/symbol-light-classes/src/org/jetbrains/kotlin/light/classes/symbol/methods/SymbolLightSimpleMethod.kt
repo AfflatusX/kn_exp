@@ -9,9 +9,9 @@ import com.intellij.psi.*
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import org.jetbrains.kotlin.analysis.api.KaSession
-import org.jetbrains.kotlin.analysis.api.symbols.KaFunctionSymbol
-import org.jetbrains.kotlin.analysis.api.symbols.KaNamedClassOrObjectSymbol
-import org.jetbrains.kotlin.analysis.api.types.KaNonErrorClassType
+import org.jetbrains.kotlin.analysis.api.symbols.KaNamedClassSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaNamedFunctionSymbol
+import org.jetbrains.kotlin.analysis.api.types.KaClassType
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.api.types.KaTypeMappingMode
 import org.jetbrains.kotlin.analysis.api.types.KaTypeNullability
@@ -33,14 +33,14 @@ import java.util.*
 
 internal class SymbolLightSimpleMethod(
     ktAnalysisSession: KaSession,
-    functionSymbol: KaFunctionSymbol,
+    functionSymbol: KaNamedFunctionSymbol,
     lightMemberOrigin: LightMemberOrigin?,
     containingClass: SymbolLightClassBase,
     methodIndex: Int,
     private val isTopLevel: Boolean,
     argumentsSkipMask: BitSet? = null,
     private val suppressStatic: Boolean = false,
-) : SymbolLightMethod<KaFunctionSymbol>(
+) : SymbolLightMethod<KaNamedFunctionSymbol>(
     ktAnalysisSession = ktAnalysisSession,
     functionSymbol = functionSymbol,
     lightMemberOrigin = lightMemberOrigin,
@@ -191,7 +191,7 @@ internal class SymbolLightSimpleMethod(
     }
 
     // Inspired by KotlinTypeMapper#forceBoxedReturnType
-    private fun KaSession.forceBoxedReturnType(functionSymbol: KaFunctionSymbol): Boolean {
+    private fun KaSession.forceBoxedReturnType(functionSymbol: KaNamedFunctionSymbol): Boolean {
         val returnType = functionSymbol.returnType
         // 'invoke' methods for lambdas, function literals, and callable references
         // implicitly override generic 'invoke' from a corresponding base class.
@@ -199,25 +199,25 @@ internal class SymbolLightSimpleMethod(
             return true
 
         return returnType.isPrimitiveBacked &&
-                functionSymbol.getAllOverriddenSymbols().any { overriddenSymbol ->
+                functionSymbol.allOverriddenSymbols.any { overriddenSymbol ->
                     !overriddenSymbol.returnType.isPrimitiveBacked
                 }
     }
 
     @Suppress("UnusedReceiverParameter")
     private fun KaSession.isInlineClassType(type: KaType): Boolean {
-        return ((type as? KaNonErrorClassType)?.symbol as? KaNamedClassOrObjectSymbol)?.isInline == true
+        return ((type as? KaClassType)?.symbol as? KaNamedClassSymbol)?.isInline == true
     }
 
     private fun KaSession.isVoidType(type: KaType): Boolean {
         val expandedType = type.fullyExpandedType
-        return expandedType.isUnit && expandedType.nullability != KaTypeNullability.NULLABLE
+        return expandedType.isUnitType && expandedType.nullability != KaTypeNullability.NULLABLE
     }
 
     private val _returnedType: PsiType by lazyPub {
         withFunctionSymbol { functionSymbol ->
             val ktType = if (functionSymbol.isSuspend) {
-                analysisSession.builtinTypes.nullableAny // Any?
+                useSiteSession.builtinTypes.nullableAny // Any?
             } else {
                 functionSymbol.returnType.takeUnless { isVoidType(it) } ?: return@withFunctionSymbol PsiTypes.voidType()
             }

@@ -72,22 +72,43 @@ class ComposeCompilerGradleSubplugin
                 add(composeExtension.reportsDestination.map<SubpluginOption> {
                     FilesSubpluginOption("reportsDestination", listOf(it.asFile))
                 }.orElse(EMPTY_OPTION))
-                add(composeExtension.enableIntrinsicRemember.map {
-                    SubpluginOption("intrinsicRemember", it.toString())
-                })
-                add(composeExtension.enableNonSkippingGroupOptimization.map {
-                    SubpluginOption("nonSkippingGroupOptimization", it.toString())
-                })
-                add(composeExtension.enableStrongSkippingMode.map {
-                    // Rename once the option in Compose compiler is also renamed
-                    SubpluginOption("strongSkipping", it.toString())
-                })
+
                 add(composeExtension.stabilityConfigurationFile.map<SubpluginOption> {
                     FilesSubpluginOption("stabilityConfigurationPath", listOf(it.asFile))
                 }.orElse(EMPTY_OPTION))
                 add(composeExtension.includeTraceMarkers.map {
                     SubpluginOption("traceMarkersEnabled", it.toString())
                 })
+
+                @Suppress("DEPRECATION")
+                addAll(
+                    composeExtension.featureFlags
+                        .zip(composeExtension.enableIntrinsicRemember) { featureFlags, intrinsicRemember ->
+                            if (!intrinsicRemember && !featureFlags.contains(ComposeFeatureFlag.IntrinsicRemember.disabled())) {
+                                featureFlags + ComposeFeatureFlag.IntrinsicRemember.disabled()
+                            } else {
+                                featureFlags
+                            }
+                        }
+                        .zip(composeExtension.enableStrongSkippingMode) { featureFlags, strongSkippingMode ->
+                            if (!strongSkippingMode && !featureFlags.contains(ComposeFeatureFlag.StrongSkipping.disabled())) {
+                                featureFlags + ComposeFeatureFlag.StrongSkipping.disabled()
+                            } else {
+                                featureFlags
+                            }
+                        }
+                        .zip(composeExtension.enableNonSkippingGroupOptimization) { featureFlags, nonSkippingGroupOptimization ->
+                            if (nonSkippingGroupOptimization && !featureFlags.contains(ComposeFeatureFlag.OptimizeNonSkippingGroups)) {
+                                featureFlags + ComposeFeatureFlag.OptimizeNonSkippingGroups
+                            } else {
+                                featureFlags
+                            }
+                        }
+                        .map { flags ->
+                            flags.map { SubpluginOption("featureFlag", it.toString()) }
+                        }
+                        .orElse(emptyList())
+                )
             }
 
         return project.objects

@@ -79,6 +79,12 @@ public class ParcelizeIrBoxTestGenerated extends AbstractParcelizeIrBoxTest {
   }
 
   @Test
+  @TestMetadata("constructorParamAndPropertyWithSameName.kt")
+  public void testConstructorParamAndPropertyWithSameName() {
+    runTest("plugins/parcelize/parcelize-compiler/testData/box/constructorParamAndPropertyWithSameName.kt");
+  }
+
+  @Test
   @TestMetadata("constructorWithoutValOrVar.kt")
   public void testConstructorWithoutValOrVar() {
     runTest("plugins/parcelize/parcelize-compiler/testData/box/constructorWithoutValOrVar.kt");
@@ -130,6 +136,12 @@ public class ParcelizeIrBoxTestGenerated extends AbstractParcelizeIrBoxTest {
   @TestMetadata("customSimple.kt")
   public void testCustomSimple() {
     runTest("plugins/parcelize/parcelize-compiler/testData/box/customSimple.kt");
+  }
+
+  @Test
+  @TestMetadata("dataClass.kt")
+  public void testDataClass() {
+    runTest("plugins/parcelize/parcelize-compiler/testData/box/dataClass.kt");
   }
 
   @Test

@@ -902,6 +902,11 @@ public class KlibIrTextTestCaseGenerated extends AbstractKlibIrTextTestCase {
           runTest("compiler/testData/ir/irText/declarations/multiplatform/k1/expectedEnumClass.kt");
         }
 
+        @TestMetadata("expectedFun.kt")
+        public void testExpectedFun() {
+          runTest("compiler/testData/ir/irText/declarations/multiplatform/k1/expectedFun.kt");
+        }
+
         @TestMetadata("expectedSealedClass.kt")
         public void testExpectedSealedClass() {
           runTest("compiler/testData/ir/irText/declarations/multiplatform/k1/expectedSealedClass.kt");
@@ -938,6 +943,11 @@ public class KlibIrTextTestCaseGenerated extends AbstractKlibIrTextTestCase {
         @TestMetadata("expectedEnumClass.kt")
         public void testExpectedEnumClass() {
           runTest("compiler/testData/ir/irText/declarations/multiplatform/k2/expectedEnumClass.kt");
+        }
+
+        @TestMetadata("expectedFun.kt")
+        public void testExpectedFun() {
+          runTest("compiler/testData/ir/irText/declarations/multiplatform/k2/expectedFun.kt");
         }
 
         @TestMetadata("expectedSealedClass.kt")
@@ -1787,6 +1797,11 @@ public class KlibIrTextTestCaseGenerated extends AbstractKlibIrTextTestCase {
     @TestMetadata("vararg.kt")
     public void testVararg() {
       runTest("compiler/testData/ir/irText/expressions/vararg.kt");
+    }
+
+    @TestMetadata("varargListOfJsStatement.kt")
+    public void testVarargListOfJsStatement() {
+      runTest("compiler/testData/ir/irText/expressions/varargListOfJsStatement.kt");
     }
 
     @TestMetadata("varargWithImplicitCast.kt")

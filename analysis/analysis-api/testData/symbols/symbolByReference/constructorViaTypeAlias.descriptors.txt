@@ -1,6 +1,7 @@
 KaConstructorSymbol:
   annotations: []
   callableId: null
+  compilerVisibility: Public
   containingClassId: java/util/ArrayList
   contextReceivers: []
   hasStableParameterNames: false
@@ -8,6 +9,8 @@ KaConstructorSymbol:
   isExpect: false
   isExtension: false
   isPrimary: false
+  location: CLASS
+  modality: FINAL
   origin: JAVA_LIBRARY
   receiverParameter: null
   returnType: KaUsualClassType:
@@ -18,7 +21,6 @@ KaConstructorSymbol:
         type: E
     ]
     type: java/util/ArrayList<E>
-  symbolKind: CLASS_MEMBER
   typeParameters: [
     KaTypeParameterSymbol(E)
   ]
@@ -26,29 +28,34 @@ KaConstructorSymbol:
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Local
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: p0
       origin: JAVA_LIBRARY
       receiverParameter: null
       returnType: KaFlexibleType:
         annotations: []
         type: (kotlin/collections/MutableCollection<out E!>..kotlin/collections/Collection<E!>?)
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: LOCAL
       getContainingFileSymbol: null
       getContainingJvmClassName: java.util.ArrayList
-      getContainingModule: KtSdkModule "SDK jdk"
+      getContainingModule: KaLibraryModule "SDK jdk"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: null
   getContainingJvmClassName: java.util.ArrayList
-  getContainingModule: KtSdkModule "SDK jdk"
+  getContainingModule: KaLibraryModule "SDK jdk"
   deprecationStatus: null

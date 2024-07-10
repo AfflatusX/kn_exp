@@ -6,16 +6,17 @@
 package org.jetbrains.kotlin.fir.resolve.providers.impl
 
 import org.jetbrains.kotlin.builtins.functions.FunctionTypeKind
+import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.isEnumClass
 import org.jetbrains.kotlin.fir.declarations.utils.isInner
 import org.jetbrains.kotlin.fir.declarations.utils.isLocal
 import org.jetbrains.kotlin.fir.diagnostics.*
-import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.AbstractCallInfo
 import org.jetbrains.kotlin.fir.resolve.calls.AbstractCandidate
+import org.jetbrains.kotlin.fir.resolve.calls.ConeResolutionAtom
 import org.jetbrains.kotlin.fir.resolve.calls.ResolutionDiagnostic
 import org.jetbrains.kotlin.fir.resolve.diagnostics.*
 import org.jetbrains.kotlin.fir.resolve.substitution.ConeSubstitutor
@@ -36,6 +37,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.shouldNotBeCalled
 
 @ThreadSafeMutableState
 class FirTypeResolverImpl(private val session: FirSession) : FirTypeResolver() {
+    private val aliasedTypeExpansionGloballyDisabled: Boolean =
+        !session.languageVersionSettings.getFlag(AnalysisFlags.expandTypeAliasesInTypeResolution)
+
     private fun resolveSymbol(
         symbol: FirBasedSymbol<*>,
         qualifier: List<FirQualifierPart>,
@@ -303,6 +307,7 @@ class FirTypeResolverImpl(private val session: FirSession) : FirTypeResolver() {
         ).also {
             val lookupTag = it.lookupTag
             if (lookupTag is ConeClassLikeLookupTagImpl && symbol is FirClassLikeSymbol<*>) {
+                @OptIn(LookupTagInternals::class)
                 lookupTag.bindSymbolToLookupTag(session, symbol)
             }
         }
@@ -458,6 +463,7 @@ class FirTypeResolverImpl(private val session: FirSession) : FirTypeResolver() {
                 // Those are guaranteed to have source sessions, though.
                 val isFromLibraryDependency = resolvedTypeSymbol?.moduleData?.session?.kind == FirSession.Kind.Library
                 val resolvedExpandedType = when {
+                    aliasedTypeExpansionGloballyDisabled -> resolvedType
                     (expandTypeAliases || isFromLibraryDependency) && resolvedTypeSymbol is FirTypeAliasSymbol -> {
                         resolvedType.fullyExpandedType(resolvedTypeSymbol.moduleData.session)
                             .withAbbreviation(AbbreviatedTypeAttribute(resolvedType))
@@ -495,10 +501,10 @@ class FirTypeResolverImpl(private val session: FirSession) : FirTypeResolver() {
         override val applicability: CandidateApplicability
     ) : AbstractCandidate() {
 
-        override val dispatchReceiver: FirExpression?
+        override val dispatchReceiver: ConeResolutionAtom?
             get() = null
 
-        override val chosenExtensionReceiver: FirExpression?
+        override val chosenExtensionReceiver: ConeResolutionAtom?
             get() = null
 
         override val explicitReceiverKind: ExplicitReceiverKind

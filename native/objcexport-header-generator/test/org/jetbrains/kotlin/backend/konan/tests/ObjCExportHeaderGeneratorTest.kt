@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.backend.konan.testUtils.headersTestDataDir
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.junit.jupiter.api.Test
 import java.io.File
+import kotlin.reflect.KTypeProjection
 import kotlin.test.fail
 
 /**
@@ -382,6 +383,12 @@ class ObjCExportHeaderGeneratorTest(private val generator: HeaderGenerator) {
     }
 
     @Test
+    @TodoAnalysisApi
+    fun `test - objCEntryPoints`() {
+        doTest(headersTestDataDir.resolve("objCEntryPoints"))
+    }
+
+    @Test
     fun `test - objCMappedPropertyExtension`() {
         doTest(headersTestDataDir.resolve("objCMappedPropertyExtension"))
     }
@@ -430,6 +437,16 @@ class ObjCExportHeaderGeneratorTest(private val generator: HeaderGenerator) {
         doTest(headersTestDataDir.resolve("deprecatedHidden"))
     }
 
+    @Test
+    fun `test - inlineClassWithNestedClass`() {
+        doTest(headersTestDataDir.resolve("inlineClassWithNestedClass"))
+    }
+
+    @Test
+    fun `test - privateTopLevelClassProperty`() {
+        doTest(headersTestDataDir.resolve("privateTopLevelClassProperty"))
+    }
+
     /**
      * Depends on unimplemented AA deprecation message: KT-67823
      */
@@ -437,6 +454,17 @@ class ObjCExportHeaderGeneratorTest(private val generator: HeaderGenerator) {
     @TodoAnalysisApi
     fun `test - deprecatedWarningAndError`() {
         doTest(headersTestDataDir.resolve("deprecatedWarningAndError"))
+    }
+
+    @Test
+    fun `test - internalPublicApi`() {
+        KTypeProjection.Companion
+        doTest(headersTestDataDir.resolve("internalPublicApi"))
+    }
+
+    @Test
+    fun `test - top level interface extension property`() {
+        doTest(headersTestDataDir.resolve("topLevelInterfaceExtensionProperty"))
     }
 
     private fun doTest(root: File, configuration: Configuration = Configuration()) {

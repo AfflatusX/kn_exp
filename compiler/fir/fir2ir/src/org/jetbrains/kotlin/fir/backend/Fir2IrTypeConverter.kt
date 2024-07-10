@@ -8,12 +8,10 @@ package org.jetbrains.kotlin.fir.backend
 import org.jetbrains.kotlin.fir.backend.utils.ConversionTypeOrigin
 import org.jetbrains.kotlin.fir.backend.utils.toIrSymbol
 import org.jetbrains.kotlin.fir.declarations.getAnnotationsByClassId
-import org.jetbrains.kotlin.fir.declarations.toAnnotationClassId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.unexpandedConeClassLikeType
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.toSymbol
-import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.substituteIntersectionTypesToUpperBoundsOrSelf
 import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTag
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.impl.*
@@ -23,12 +21,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.StandardClassIds
-import org.jetbrains.kotlin.name.StandardClassIds.Annotations.EnhancedNullability
 import org.jetbrains.kotlin.name.StandardClassIds.Annotations.ExtensionFunctionType
-import org.jetbrains.kotlin.name.StandardClassIds.Annotations.FlexibleArrayElementVariance
-import org.jetbrains.kotlin.name.StandardClassIds.Annotations.FlexibleMutability
-import org.jetbrains.kotlin.name.StandardClassIds.Annotations.FlexibleNullability
-import org.jetbrains.kotlin.name.StandardClassIds.Annotations.RawTypeAnnotation
 import org.jetbrains.kotlin.types.CommonFlexibleTypeBoundsChecker
 import org.jetbrains.kotlin.types.TypeApproximatorConfiguration
 import org.jetbrains.kotlin.types.Variance
@@ -118,24 +111,21 @@ class Fir2IrTypeConverter(
                         ?: (lookupTag as? ConeClassLikeLookupTag)?.let(classifierStorage::getIrClassForNotFoundClass)?.symbol
                         ?: return createErrorType()
 
+                val specialAnnotationsProvider = specialAnnotationsProvider
                 if (specialAnnotationsProvider != null) {
-                    fun has(classId: ClassId): Boolean {
-                        return annotations.any { it.toAnnotationClassId(session) == classId }
-                    }
-
-                    if (hasEnhancedNullability || has(EnhancedNullability)) {
+                    if (hasEnhancedNullability) {
                         typeAnnotations += specialAnnotationsProvider.generateEnhancedNullabilityAnnotationCall()
                     }
-                    if (hasFlexibleNullability || has(FlexibleNullability)) {
+                    if (hasFlexibleNullability) {
                         typeAnnotations += specialAnnotationsProvider.generateFlexibleNullabilityAnnotationCall()
                     }
-                    if (hasFlexibleMutability || has(FlexibleMutability)) {
+                    if (hasFlexibleMutability) {
                         typeAnnotations += specialAnnotationsProvider.generateFlexibleMutabilityAnnotationCall()
                     }
-                    if (hasFlexibleArrayElementVariance || has(FlexibleArrayElementVariance)) {
+                    if (hasFlexibleArrayElementVariance) {
                         typeAnnotations += specialAnnotationsProvider.generateFlexibleArrayElementVarianceAnnotationCall()
                     }
-                    if (addRawTypeAnnotation || has(RawTypeAnnotation)) {
+                    if (addRawTypeAnnotation) {
                         typeAnnotations += specialAnnotationsProvider.generateRawTypeAnnotationCall()
                     }
                 }
@@ -154,7 +144,7 @@ class Fir2IrTypeConverter(
                     typeAnnotations += callGenerator.convertToIrConstructorCall(attributeAnnotation) as? IrConstructorCall ?: continue
                 }
                 val expandedType = fullyExpandedType(session)
-                val approximatedType = approximateType(expandedType)
+                val approximatedType = expandedType.approximateForIrOrSelf(c)
 
                 if (approximatedType is ConeTypeParameterType && conversionScope.shouldEraseType(approximatedType)) {
                     // This hack is about type parameter leak in case of generic delegated property
@@ -184,7 +174,7 @@ class Fir2IrTypeConverter(
             }
             is ConeDynamicType -> {
                 val typeAnnotations = with(annotationGenerator) { annotations.toIrAnnotations() }
-                return IrDynamicTypeImpl(null, typeAnnotations, Variance.INVARIANT)
+                return IrDynamicTypeImpl(typeAnnotations, Variance.INVARIANT)
             }
             is ConeFlexibleType -> with(session.typeContext) {
                 if (upperBound is ConeClassLikeType) {
@@ -248,10 +238,10 @@ class Fir2IrTypeConverter(
 
     private fun ConeFlexibleType.hasFlexibleArrayElementVariance(): Boolean =
         lowerBound.let { lowerBound ->
-            lowerBound is ConeClassLikeType && lowerBound.lookupTag.classId == StandardClassIds.Array &&
+            lowerBound.classLikeLookupTagIfAny?.classId == StandardClassIds.Array &&
                     lowerBound.typeArguments.single().kind == ProjectionKind.INVARIANT
         } && upperBound.let { upperBound ->
-            upperBound is ConeClassLikeType && upperBound.lookupTag.classId == StandardClassIds.Array &&
+            upperBound.classLikeLookupTagIfAny?.classId == StandardClassIds.Array &&
                     upperBound.typeArguments.single().kind == ProjectionKind.OUT
         }
 
@@ -259,7 +249,7 @@ class Fir2IrTypeConverter(
         val commonSupertype = session.typeContext.commonSuperTypeOrNull(resolvedBounds.map { it.type })!!
         val resultType = (commonSupertype as? ConeClassLikeType)?.replaceArgumentsWithStarProjections()
             ?: commonSupertype
-        val approximatedType = (commonSupertype as? ConeSimpleKotlinType)?.let { approximateType(it) } ?: resultType
+        val approximatedType = (commonSupertype as? ConeSimpleKotlinType)?.approximateForIrOrSelf(c) ?: resultType
         return approximatedType.toIrType(c)
     }
 
@@ -334,11 +324,6 @@ class Fir2IrTypeConverter(
     // TODO: candidate for removal
     private fun getBuiltInClassSymbol(classId: ClassId?): IrClassSymbol? {
         return classIdToSymbolMap[classId] ?: getArrayClassSymbol(classId)
-    }
-
-    private fun approximateType(type: ConeSimpleKotlinType): ConeKotlinType {
-        if (type is ConeClassLikeType && type.typeArguments.isEmpty()) return type
-        return type.substituteIntersectionTypesToUpperBoundsOrSelf(session).approximateForIrOrSelf(c)
     }
 }
 

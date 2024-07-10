@@ -4,7 +4,7 @@ implicit receivers:
     annotations: []
     typeArguments: []
     type: test/Child
-  owner symbol: KaFirNamedClassOrObjectSymbol
+  owner symbol: KaFirNamedClassSymbol
 
 scopes:
   LocalScope, index = 0
@@ -14,14 +14,20 @@ scopes:
       KaValueParameterSymbol:
         annotations: []
         callableId: null
+        compilerVisibility: Public
         contextReceivers: []
         generatedPrimaryConstructorProperty: null
         hasDefaultValue: false
+        isActual: false
         isCrossinline: false
+        isExpect: false
         isExtension: false
         isImplicitLambdaParameter: false
         isNoinline: false
+        isVal: true
         isVararg: false
+        location: LOCAL
+        modality: FINAL
         name: constructorParam
         origin: SOURCE
         receiverParameter: null
@@ -29,8 +35,7 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Int
-        symbolKind: LOCAL
-        typeParameters: []
+        visibility: PUBLIC
     constructors: 0
 
   TypeScope, index = 1
@@ -42,8 +47,14 @@ scopes:
         backingFieldSymbol: KaBackingFieldSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
+          isActual: false
+          isExpect: false
           isExtension: false
+          isVal: true
+          location: PROPERTY
+          modality: FINAL
           name: field
           origin: PROPERTY_BACKING_FIELD
           owningProperty: KaKotlinPropertySymbol(test/Child.constructorProp)
@@ -52,20 +63,24 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: LOCAL
-          typeParameters: []
+          visibility: PUBLIC
         callableId: test/Child.constructorProp
+        compilerVisibility: Public
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
           hasBody: false
           hasStableParameterNames: true
+          isActual: false
           isDefault: true
+          isExpect: false
           isExtension: false
           isInline: false
           isOverride: false
+          location: PROPERTY
           modality: FINAL
           origin: SOURCE
           receiverParameter: null
@@ -73,10 +88,8 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: ACCESSOR
-          typeParameters: []
           valueParameters: []
-          visibility: Public
+          visibility: PUBLIC
         hasBackingField: true
         hasGetter: true
         hasSetter: false
@@ -91,6 +104,7 @@ scopes:
         isOverride: false
         isStatic: false
         isVal: true
+        location: CLASS
         modality: FINAL
         name: constructorProp
         origin: SOURCE
@@ -100,12 +114,12 @@ scopes:
           typeArguments: []
           type: kotlin/Int
         setter: null
-        symbolKind: CLASS_MEMBER
         typeParameters: []
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: test/Child.childMember
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -121,6 +135,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: FINAL
         name: childMember
         origin: SOURCE
@@ -129,17 +144,22 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Int
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
+        visibility: PUBLIC
       KaKotlinPropertySymbol:
         annotations: []
         backingFieldSymbol: KaBackingFieldSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Private
           contextReceivers: []
+          isActual: false
+          isExpect: false
           isExtension: false
+          isVal: true
+          location: PROPERTY
+          modality: FINAL
           name: field
           origin: PROPERTY_BACKING_FIELD
           owningProperty: KaKotlinPropertySymbol(test/Child.childProp)
@@ -148,20 +168,24 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: LOCAL
-          typeParameters: []
+          visibility: PRIVATE
         callableId: test/Child.childProp
+        compilerVisibility: Public
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
           hasBody: false
           hasStableParameterNames: true
+          isActual: false
           isDefault: true
+          isExpect: false
           isExtension: false
           isInline: false
           isOverride: false
+          location: PROPERTY
           modality: FINAL
           origin: SOURCE
           receiverParameter: null
@@ -169,10 +193,8 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: ACCESSOR
-          typeParameters: []
           valueParameters: []
-          visibility: Public
+          visibility: PUBLIC
         hasBackingField: true
         hasGetter: true
         hasSetter: false
@@ -187,6 +209,7 @@ scopes:
         isOverride: false
         isStatic: false
         isVal: true
+        location: CLASS
         modality: FINAL
         name: childProp
         origin: SOURCE
@@ -196,16 +219,21 @@ scopes:
           typeArguments: []
           type: kotlin/Int
         setter: null
-        symbolKind: CLASS_MEMBER
         typeParameters: []
-        visibility: Public
+        visibility: PUBLIC
       KaKotlinPropertySymbol:
         annotations: []
         backingFieldSymbol: KaBackingFieldSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
+          isActual: false
+          isExpect: false
           isExtension: false
+          isVal: true
+          location: PROPERTY
+          modality: FINAL
           name: field
           origin: PROPERTY_BACKING_FIELD
           owningProperty: KaKotlinPropertySymbol(test/Base.value)
@@ -214,20 +242,24 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: LOCAL
-          typeParameters: []
+          visibility: PUBLIC
         callableId: test/Base.value
+        compilerVisibility: Public
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
           hasBody: false
           hasStableParameterNames: true
+          isActual: false
           isDefault: true
+          isExpect: false
           isExtension: false
           isInline: false
           isOverride: false
+          location: PROPERTY
           modality: FINAL
           origin: SOURCE
           receiverParameter: null
@@ -235,10 +267,8 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: ACCESSOR
-          typeParameters: []
           valueParameters: []
-          visibility: Public
+          visibility: PUBLIC
         hasBackingField: true
         hasGetter: true
         hasSetter: false
@@ -253,6 +283,7 @@ scopes:
         isOverride: false
         isStatic: false
         isVal: true
+        location: CLASS
         modality: FINAL
         name: value
         origin: SOURCE
@@ -262,12 +293,12 @@ scopes:
           typeArguments: []
           type: kotlin/Int
         setter: null
-        symbolKind: CLASS_MEMBER
         typeParameters: []
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: test/Base.baseMember
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -283,6 +314,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: FINAL
         name: baseMember
         origin: SOURCE
@@ -291,17 +323,22 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Int
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
+        visibility: PUBLIC
       KaKotlinPropertySymbol:
         annotations: []
         backingFieldSymbol: KaBackingFieldSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Private
           contextReceivers: []
+          isActual: false
+          isExpect: false
           isExtension: false
+          isVal: true
+          location: PROPERTY
+          modality: FINAL
           name: field
           origin: PROPERTY_BACKING_FIELD
           owningProperty: KaKotlinPropertySymbol(test/Base.baseProp)
@@ -310,20 +347,24 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: LOCAL
-          typeParameters: []
+          visibility: PRIVATE
         callableId: test/Base.baseProp
+        compilerVisibility: Public
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
           hasBody: false
           hasStableParameterNames: true
+          isActual: false
           isDefault: true
+          isExpect: false
           isExtension: false
           isInline: false
           isOverride: false
+          location: PROPERTY
           modality: FINAL
           origin: SOURCE
           receiverParameter: null
@@ -331,10 +372,8 @@ scopes:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: ACCESSOR
-          typeParameters: []
           valueParameters: []
-          visibility: Public
+          visibility: PUBLIC
         hasBackingField: true
         hasGetter: true
         hasSetter: false
@@ -349,6 +388,7 @@ scopes:
         isOverride: false
         isStatic: false
         isVal: true
+        location: CLASS
         modality: FINAL
         name: baseProp
         origin: SOURCE
@@ -358,12 +398,12 @@ scopes:
           typeArguments: []
           type: kotlin/Int
         setter: null
-        symbolKind: CLASS_MEMBER
         typeParameters: []
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: kotlin/Any.equals
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -379,6 +419,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: OPEN
         name: equals
         origin: LIBRARY
@@ -387,20 +428,25 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Boolean
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: [
           KaValueParameterSymbol:
             annotations: []
             callableId: null
+            compilerVisibility: Public
             contextReceivers: []
             generatedPrimaryConstructorProperty: null
             hasDefaultValue: false
+            isActual: false
             isCrossinline: false
+            isExpect: false
             isExtension: false
             isImplicitLambdaParameter: false
             isNoinline: false
+            isVal: true
             isVararg: false
+            location: LOCAL
+            modality: FINAL
             name: other
             origin: LIBRARY
             receiverParameter: null
@@ -408,13 +454,13 @@ scopes:
               annotations: []
               typeArguments: []
               type: kotlin/Any?
-            symbolKind: LOCAL
-            typeParameters: []
+            visibility: PUBLIC
         ]
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: kotlin/Any.hashCode
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -430,6 +476,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: OPEN
         name: hashCode
         origin: LIBRARY
@@ -438,13 +485,13 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Int
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: kotlin/Any.toString
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -460,6 +507,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: OPEN
         name: toString
         origin: LIBRARY
@@ -468,14 +516,14 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/String
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
+        visibility: PUBLIC
     constructors: 1
       KaConstructorSymbol:
         annotations: []
         callableId: null
+        compilerVisibility: Public
         containingClassId: test/Child
         contextReceivers: []
         hasStableParameterNames: true
@@ -483,26 +531,34 @@ scopes:
         isExpect: false
         isExtension: false
         isPrimary: true
+        location: CLASS
+        modality: FINAL
         origin: SOURCE
         receiverParameter: null
         returnType: KaUsualClassType:
           annotations: []
           typeArguments: []
           type: test/Child
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: [
           KaValueParameterSymbol:
             annotations: []
             callableId: null
+            compilerVisibility: Public
             contextReceivers: []
             generatedPrimaryConstructorProperty: KaKotlinPropertySymbol:
               annotations: []
               backingFieldSymbol: KaBackingFieldSymbol:
                 annotations: []
                 callableId: null
+                compilerVisibility: Public
                 contextReceivers: []
+                isActual: false
+                isExpect: false
                 isExtension: false
+                isVal: true
+                location: PROPERTY
+                modality: FINAL
                 name: field
                 origin: PROPERTY_BACKING_FIELD
                 owningProperty: KaKotlinPropertySymbol(test/Child.constructorProp)
@@ -511,20 +567,24 @@ scopes:
                   annotations: []
                   typeArguments: []
                   type: kotlin/Int
-                symbolKind: LOCAL
-                typeParameters: []
+                visibility: PUBLIC
               callableId: test/Child.constructorProp
+              compilerVisibility: Public
               contextReceivers: []
               getter: KaPropertyGetterSymbol:
                 annotations: []
                 callableId: null
+                compilerVisibility: Public
                 contextReceivers: []
                 hasBody: false
                 hasStableParameterNames: true
+                isActual: false
                 isDefault: true
+                isExpect: false
                 isExtension: false
                 isInline: false
                 isOverride: false
+                location: PROPERTY
                 modality: FINAL
                 origin: SOURCE
                 receiverParameter: null
@@ -532,10 +592,8 @@ scopes:
                   annotations: []
                   typeArguments: []
                   type: kotlin/Int
-                symbolKind: ACCESSOR
-                typeParameters: []
                 valueParameters: []
-                visibility: Public
+                visibility: PUBLIC
               hasBackingField: true
               hasGetter: true
               hasSetter: false
@@ -550,6 +608,7 @@ scopes:
               isOverride: false
               isStatic: false
               isVal: true
+              location: CLASS
               modality: FINAL
               name: constructorProp
               origin: SOURCE
@@ -559,15 +618,19 @@ scopes:
                 typeArguments: []
                 type: kotlin/Int
               setter: null
-              symbolKind: CLASS_MEMBER
               typeParameters: []
-              visibility: Public
+              visibility: PUBLIC
             hasDefaultValue: false
+            isActual: false
             isCrossinline: false
+            isExpect: false
             isExtension: false
             isImplicitLambdaParameter: false
             isNoinline: false
+            isVal: true
             isVararg: false
+            location: LOCAL
+            modality: FINAL
             name: constructorProp
             origin: SOURCE
             receiverParameter: null
@@ -575,19 +638,24 @@ scopes:
               annotations: []
               typeArguments: []
               type: kotlin/Int
-            symbolKind: LOCAL
-            typeParameters: []
+            visibility: PUBLIC
           KaValueParameterSymbol:
             annotations: []
             callableId: null
+            compilerVisibility: Public
             contextReceivers: []
             generatedPrimaryConstructorProperty: null
             hasDefaultValue: false
+            isActual: false
             isCrossinline: false
+            isExpect: false
             isExtension: false
             isImplicitLambdaParameter: false
             isNoinline: false
+            isVal: true
             isVararg: false
+            location: LOCAL
+            modality: FINAL
             name: constructorParam
             origin: SOURCE
             receiverParameter: null
@@ -595,10 +663,9 @@ scopes:
               annotations: []
               typeArguments: []
               type: kotlin/Int
-            symbolKind: LOCAL
-            typeParameters: []
+            visibility: PUBLIC
         ]
-        visibility: Public
+        visibility: PUBLIC
 
   ExplicitSimpleImportingScope, index = 2
     packages: 0
@@ -609,11 +676,12 @@ scopes:
   PackageMemberScope, index = 3
     packages: 0
     classifiers: 2
-      KaNamedClassOrObjectSymbol:
+      KaNamedClassSymbol:
         annotations: []
         classId: test/Base
         classKind: CLASS
         companionObject: null
+        compilerVisibility: Public
         contextReceivers: []
         isActual: false
         isData: false
@@ -622,6 +690,7 @@ scopes:
         isFun: false
         isInline: false
         isInner: false
+        location: TOP_LEVEL
         modality: OPEN
         name: Base
         origin: SOURCE
@@ -631,14 +700,14 @@ scopes:
             typeArguments: []
             type: kotlin/Any
         ]
-        symbolKind: TOP_LEVEL
         typeParameters: []
-        visibility: Public
-      KaNamedClassOrObjectSymbol:
+        visibility: PUBLIC
+      KaNamedClassSymbol:
         annotations: []
         classId: test/Child
         classKind: CLASS
         companionObject: null
+        compilerVisibility: Public
         contextReceivers: []
         isActual: false
         isData: false
@@ -647,6 +716,7 @@ scopes:
         isFun: false
         isInline: false
         isInner: false
+        location: TOP_LEVEL
         modality: FINAL
         name: Child
         origin: SOURCE
@@ -656,9 +726,8 @@ scopes:
             typeArguments: []
             type: test/Base
         ]
-        symbolKind: TOP_LEVEL
         typeParameters: []
-        visibility: Public
+        visibility: PUBLIC
     callables: 0
     constructors: 0
 

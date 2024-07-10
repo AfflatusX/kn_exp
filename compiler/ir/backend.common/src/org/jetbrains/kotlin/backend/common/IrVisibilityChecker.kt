@@ -10,7 +10,10 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.descriptors.toEffectiveVisibilityOrNull
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
+import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.moduleDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDeclarationReference
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -21,11 +24,15 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.util.fileOrNull
 import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isPublishedApi
 import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.ir.visitors.IrTypeTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
-import org.jetbrains.kotlin.name.StandardClassIds
+import org.jetbrains.kotlin.library.KOTLINTEST_MODULE_NAME
+import org.jetbrains.kotlin.library.KOTLIN_JS_STDLIB_NAME
+import org.jetbrains.kotlin.library.KOTLIN_NATIVE_STDLIB_NAME
+import org.jetbrains.kotlin.library.KOTLIN_WASM_STDLIB_NAME
+import org.jetbrains.kotlin.name.Name
 
 /**
  * Verifies that all expressions and types that reference declarations, the referenced declaration is actually visible in that scope.
@@ -51,6 +58,16 @@ internal class IrVisibilityChecker(
     private val reportError: ReportIrValidationError,
 ) : IrTypeTransformerVoid() {
 
+    companion object {
+        private val EXCLUDED_MODULE_NAMES: Set<Name> =
+            arrayOf(
+                KOTLIN_NATIVE_STDLIB_NAME,
+                KOTLIN_JS_STDLIB_NAME,
+                KOTLIN_WASM_STDLIB_NAME,
+                KOTLINTEST_MODULE_NAME,
+            ).mapTo(mutableSetOf()) { Name.special("<$it>") }
+    }
+
     private val parentChain = mutableListOf<IrElement>()
 
     private fun visibilityError(element: IrElement, visibility: Visibility) {
@@ -69,6 +86,12 @@ internal class IrVisibilityChecker(
     }
 
     override fun visitElement(element: IrElement) {
+
+        // Don't validate the standard library.
+        // Since we're always lowering the whole world on non-JVM backends, including the standard library, visibility violations there
+        // cause most compiler tests to fail, which we don't want.
+        if (module.name in EXCLUDED_MODULE_NAMES) return
+
         parentChain.push(element)
         element.acceptChildrenVoid(this)
         parentChain.pop()
@@ -80,7 +103,7 @@ internal class IrVisibilityChecker(
             // When compiling JS stdlib, intrinsic declarations are moved to a special module that doesn't have a descriptor.
             // This happens after deserialization but before executing any lowerings, including IR validating lowering
             // See MoveBodilessDeclarationsToSeparatePlaceLowering
-            return this@IrVisibilityChecker.module.name.asString() == "<kotlin>"
+            return this@IrVisibilityChecker.module.name.asString() == "<$KOTLIN_JS_STDLIB_NAME>"
         }
         return this@IrVisibilityChecker.module.descriptor.shouldSeeInternalsOf(referencedDeclarationPackageFragment.moduleDescriptor)
     }
@@ -99,14 +122,10 @@ internal class IrVisibilityChecker(
         val classOfReferenced = referencedDeclaration.parentClassOrNull
         val visibility = referencedDeclaration.visibility.delegate
 
-        fun IrAnnotationContainer.isPublishedApi() = hasAnnotation(StandardClassIds.Annotations.PublishedApi)
-
         val effectiveVisibility = visibility.toEffectiveVisibilityOrNull(
             container = classOfReferenced?.symbol,
             forClass = true,
-            ownerIsPublishedApi = referencedDeclaration.run {
-                isPublishedApi() || this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isPublishedApi() == true
-            }
+            ownerIsPublishedApi = referencedDeclaration.isPublishedApi(),
         )
 
         val isVisible = when (effectiveVisibility) {

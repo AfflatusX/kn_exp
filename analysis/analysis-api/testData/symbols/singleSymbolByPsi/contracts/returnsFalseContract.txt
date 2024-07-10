@@ -1,9 +1,10 @@
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: [
     kotlin/OptIn(markerClass = [kotlin.contracts.ExperimentalContracts::class])
       psi: KtAnnotationEntry
   ]
   callableId: /returnsFalseContract
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: [
     KaContractConditionalContractEffectDeclaration:
@@ -20,14 +21,20 @@ KaFunctionSymbol:
                 KaValueParameterSymbol:
                   annotations: []
                   callableId: null
+                  compilerVisibility: Public
                   contextReceivers: []
                   generatedPrimaryConstructorProperty: null
                   hasDefaultValue: false
+                  isActual: false
                   isCrossinline: false
+                  isExpect: false
                   isExtension: false
                   isImplicitLambdaParameter: false
                   isNoinline: false
+                  isVal: true
                   isVararg: false
+                  location: LOCAL
+                  modality: FINAL
                   name: foo
                   origin: SOURCE
                   receiverParameter: null
@@ -35,11 +42,10 @@ KaFunctionSymbol:
                     annotations: []
                     typeArguments: []
                     type: kotlin/Any?
-                  symbolKind: LOCAL
-                  typeParameters: []
+                  visibility: PUBLIC
                   getContainingFileSymbol: KaFileSymbol(returnsFalseContract.kt)
                   getContainingJvmClassName: ReturnsFalseContractKt
-                  getContainingModule: KtSourceModule "Sources of main"
+                  getContainingModule: KaSourceModule "Sources of main"
                   deprecationStatus: null
           isNegated: true
   ]
@@ -56,6 +62,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: returnsFalseContract
   origin: SOURCE
@@ -64,20 +71,25 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Boolean
-  symbolKind: TOP_LEVEL
   typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: foo
       origin: SOURCE
       receiverParameter: null
@@ -85,15 +97,14 @@ KaFunctionSymbol:
         annotations: []
         typeArguments: []
         type: kotlin/Any?
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: KaFileSymbol(returnsFalseContract.kt)
       getContainingJvmClassName: ReturnsFalseContractKt
-      getContainingModule: KtSourceModule "Sources of main"
+      getContainingModule: KaSourceModule "Sources of main"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(returnsFalseContract.kt)
   getContainingJvmClassName: ReturnsFalseContractKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

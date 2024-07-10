@@ -116,13 +116,8 @@ fun IrMemberAccessExpression<*>.getAllArgumentsWithIr(): List<Pair<IrValueParame
 fun IrMemberAccessExpression<*>.getAllArgumentsWithIr(irFunction: IrFunction): List<Pair<IrValueParameter, IrExpression?>> {
     val res = mutableListOf<Pair<IrValueParameter, IrExpression?>>()
 
-    dispatchReceiver?.let { arg ->
-        irFunction.dispatchReceiverParameter?.let { parameter -> res += (parameter to arg) }
-    }
-
-    extensionReceiver?.let { arg ->
-        irFunction.extensionReceiverParameter?.let { parameter -> res += (parameter to arg) }
-    }
+    irFunction.dispatchReceiverParameter?.let { parameter -> res += (parameter to dispatchReceiver) }
+    irFunction.extensionReceiverParameter?.let { parameter -> res += (parameter to extensionReceiver) }
 
     irFunction.valueParameters.forEachIndexed { index, it ->
         res += it to getValueArgument(index)
@@ -651,10 +646,10 @@ val IrDeclaration.parentDeclarationsWithSelf: Sequence<IrDeclaration>
     get() = generateSequence(this) { it.parent as? IrDeclaration }
 
 val IrFunction.allTypeParameters: List<IrTypeParameter>
-    get() = if (this is IrConstructor)
-        parentAsClass.typeParameters + typeParameters
-    else
-        typeParameters
+    get() = when (this) {
+        is IrConstructor -> parentAsClass.typeParameters + typeParameters
+        is IrSimpleFunction -> typeParameters
+    }
 
 
 fun IrMemberAccessExpression<*>.getTypeSubstitutionMap(irFunction: IrFunction): Map<IrTypeParameterSymbol, IrType> {
@@ -675,14 +670,17 @@ fun IrMemberAccessExpression<*>.getTypeSubstitutionMap(irFunction: IrFunction): 
     val result = mutableMapOf<IrTypeParameterSymbol, IrType>()
     if (dispatchReceiverTypeArguments.isNotEmpty()) {
         val parentTypeParameters =
-            if (irFunction is IrConstructor) {
-                val constructedClass = irFunction.parentAsClass
-                if (!constructedClass.isInner && dispatchReceiver != null) {
-                    throw AssertionError("Non-inner class constructor reference with dispatch receiver:\n${this.dump()}")
+            when (irFunction) {
+                is IrConstructor -> {
+                    val constructedClass = irFunction.parentAsClass
+                    if (!constructedClass.isInner && dispatchReceiver != null) {
+                        throw AssertionError("Non-inner class constructor reference with dispatch receiver:\n${this.dump()}")
+                    }
+                    extractTypeParameters(constructedClass.parent as IrClass)
                 }
-                extractTypeParameters(constructedClass.parent as IrClass)
-            } else {
-                extractTypeParameters(irFunction.parentClassOrNull!!)
+                is IrSimpleFunction -> {
+                    extractTypeParameters(irFunction.parentClassOrNull!!)
+                }
             }
         for ((index, typeParam) in parentTypeParameters.withIndex()) {
             dispatchReceiverTypeArguments[index].typeOrNull?.let {
@@ -1258,20 +1256,26 @@ fun IrFunction.createDispatchReceiverParameter(origin: IrDeclarationOrigin? = nu
 }
 
 val IrFunction.allParameters: List<IrValueParameter>
-    get() = if (this is IrConstructor) {
-        ArrayList<IrValueParameter>(allParametersCount).also {
-            it.add(
-                this.constructedClass.thisReceiver
-                    ?: error(this.render())
-            )
-            addExplicitParametersTo(it)
+    get() = when (this) {
+        is IrConstructor -> {
+            ArrayList<IrValueParameter>(allParametersCount).also {
+                it.add(
+                    this.constructedClass.thisReceiver
+                        ?: error(this.render())
+                )
+                addExplicitParametersTo(it)
+            }
         }
-    } else {
-        explicitParameters
+        is IrSimpleFunction -> {
+            explicitParameters
+        }
     }
 
 val IrFunction.allParametersCount: Int
-    get() = if (this is IrConstructor) explicitParametersCount + 1 else explicitParametersCount
+    get() = when (this) {
+        is IrConstructor -> explicitParametersCount + 1
+        is IrSimpleFunction -> explicitParametersCount
+    }
 
 private object LoweringsFakeOverrideBuilderStrategy : FakeOverrideBuilderStrategy.BindToPrivateSymbols(
     friendModules = emptyMap(), // TODO: this is probably not correct. Should be fixed by KT-61384. But it's not important for current usages
@@ -1619,3 +1623,21 @@ fun IrModuleFragment.addFile(file: IrFile) {
     files.add(file)
     file.module = this
 }
+
+fun IrFunctionAccessExpression.receiverAndArgs(): List<IrExpression> {
+    return (arrayListOf(this.dispatchReceiver, this.extensionReceiver) +
+            symbol.owner.valueParameters.mapIndexed { i, _ -> getValueArgument(i) }).filterNotNull()
+}
+
+val IrFunction.propertyIfAccessor: IrDeclaration
+    get() = (this as? IrSimpleFunction)?.correspondingPropertySymbol?.owner ?: this
+
+/**
+ * Whether this declaration (or its corresponding property if it's a property accessor) has the [PublishedApi] annotation.
+ */
+fun IrDeclaration.isPublishedApi(): Boolean =
+    hasAnnotation(StandardClassIds.Annotations.PublishedApi) ||
+            (this as? IrSimpleFunction)
+                ?.correspondingPropertySymbol
+                ?.owner
+                ?.hasAnnotation(StandardClassIds.Annotations.PublishedApi) ?: false

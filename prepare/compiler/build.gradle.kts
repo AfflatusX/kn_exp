@@ -126,7 +126,8 @@ val distCompilerPluginProjects = listOf(
     ":kotlinx-serialization-compiler-plugin",
     ":kotlin-lombok-compiler-plugin",
     ":kotlin-assignment-compiler-plugin",
-    ":kotlin-scripting-compiler"
+    ":kotlin-scripting-compiler",
+    ":plugins:compose-compiler-plugin:compiler",
 )
 val distCompilerPluginProjectsCompat = listOf(
     ":kotlinx-serialization-compiler-plugin",
@@ -173,9 +174,10 @@ dependencies {
     distLibraryProjects.forEach {
         libraries(project(it)) { isTransitive = false }
     }
-
-    distCompilerPluginProjects.forEach {
-        compilerPlugins(project(it)) { isTransitive = false }
+    if (!kotlinBuildProperties.isInJpsBuildIdeaSync) {
+        distCompilerPluginProjects.forEach {
+            compilerPlugins(project(it)) { isTransitive = false }
+        }
     }
     distCompilerPluginProjectsCompat.forEach {
         compilerPluginsCompat(

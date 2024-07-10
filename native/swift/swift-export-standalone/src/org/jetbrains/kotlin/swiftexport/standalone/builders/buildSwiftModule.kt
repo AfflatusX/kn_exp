@@ -9,9 +9,10 @@ import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.scopes.KaScope
 import org.jetbrains.kotlin.analysis.api.standalone.buildStandaloneAnalysisAPISession
-import org.jetbrains.kotlin.analysis.project.structure.KtLibraryModule
-import org.jetbrains.kotlin.analysis.project.structure.KtModule
-import org.jetbrains.kotlin.analysis.project.structure.KtSourceModule
+import org.jetbrains.kotlin.analysis.api.projectStructure.KaLibraryModule
+import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
+import org.jetbrains.kotlin.analysis.api.projectStructure.KaSourceModule
+import org.jetbrains.kotlin.analysis.project.structure.builder.KtModuleProviderBuilder
 import org.jetbrains.kotlin.analysis.project.structure.builder.buildKtLibraryModule
 import org.jetbrains.kotlin.analysis.project.structure.builder.buildKtSourceModule
 import org.jetbrains.kotlin.konan.target.Distribution
@@ -20,16 +21,12 @@ import org.jetbrains.kotlin.name.FqNameUnsafe
 import org.jetbrains.kotlin.platform.konan.NativePlatforms
 import org.jetbrains.kotlin.sir.SirModule
 import org.jetbrains.kotlin.sir.SirMutableDeclarationContainer
-import org.jetbrains.kotlin.sir.builder.buildModule
 import org.jetbrains.kotlin.sir.providers.impl.SirOneToOneModuleProvider
 import org.jetbrains.kotlin.sir.providers.impl.SirSingleModuleProvider
 import org.jetbrains.kotlin.sir.providers.utils.UnsupportedDeclarationReporter
 import org.jetbrains.kotlin.sir.util.addChild
 import org.jetbrains.kotlin.sir.util.isValidSwiftIdentifier
-import org.jetbrains.kotlin.swiftexport.standalone.InputModule
-import org.jetbrains.kotlin.swiftexport.standalone.MultipleModulesHandlingStrategy
-import org.jetbrains.kotlin.swiftexport.standalone.SwiftExportConfig
-import org.jetbrains.kotlin.swiftexport.standalone.SwiftExportLogger
+import org.jetbrains.kotlin.swiftexport.standalone.*
 import org.jetbrains.kotlin.swiftexport.standalone.klib.KlibScope
 import org.jetbrains.kotlin.swiftexport.standalone.session.StandaloneSirSession
 import kotlin.io.path.Path
@@ -40,20 +37,21 @@ internal class SwiftModuleBuildResults(
 )
 
 internal fun buildSwiftModule(
-    input: InputModule.Binary,
+    input: InputModule,
+    dependencies: Set<InputModule>,
+    moduleForPackages: SirModule?,
     config: SwiftExportConfig,
     unsupportedDeclarationReporter: UnsupportedDeclarationReporter,
 ): SwiftModuleBuildResults {
     val (useSiteModule, mainModule, scopeProvider) =
-        createModuleWithScopeProviderFromBinary(config.distribution, input)
+        createModuleWithScopeProviderFromBinary(config.distribution, input, dependencies)
     val moduleProvider = when (config.multipleModulesHandlingStrategy) {
-        MultipleModulesHandlingStrategy.OneToOneModuleMapping -> SirOneToOneModuleProvider(mainModuleName = input.name)
+        MultipleModulesHandlingStrategy.OneToOneModuleMapping -> SirOneToOneModuleProvider()
         MultipleModulesHandlingStrategy.IntoSingleModule -> SirSingleModuleProvider(swiftModuleName = input.name)
     }
     val moduleForPackageEnums = when (config.multipleModulesHandlingStrategy) {
-        MultipleModulesHandlingStrategy.OneToOneModuleMapping -> buildModule {
-            name = "ExportedKotlinPackages"
-        }
+        MultipleModulesHandlingStrategy.OneToOneModuleMapping -> moduleForPackages
+            ?: error("moduleForPackages on runSwiftExport were nil, while the config is OneToOneModuleMapping. Please provide moduleForPackages")
         MultipleModulesHandlingStrategy.IntoSingleModule -> with(moduleProvider) { mainModule.sirModule() }
     }
     val sirSession = StandaloneSirSession(
@@ -99,17 +97,18 @@ internal fun buildSwiftModule(
  * [scopeProvider] provides declarations that should be worked with.
  */
 private data class ModuleWithScopeProvider(
-    val useSiteModule: KtModule,
-    val mainModule: KtModule,
+    val useSiteModule: KaModule,
+    val mainModule: KaModule,
     val scopeProvider: (KaSession) -> List<KaScope>,
 )
 
 private fun createModuleWithScopeProviderFromBinary(
     kotlinDistribution: Distribution,
-    input: InputModule.Binary,
+    input: InputModule,
+    dependencies: Set<InputModule>,
 ): ModuleWithScopeProvider {
-    lateinit var binaryModule: KtLibraryModule
-    lateinit var fakeSourceModule: KtSourceModule
+    lateinit var binaryModule: KaLibraryModule
+    lateinit var fakeSourceModule: KaSourceModule
     buildStandaloneAnalysisAPISession {
         buildKtModuleProvider {
             platform = NativePlatforms.unspecifiedNativePlatform
@@ -121,14 +120,10 @@ private fun createModuleWithScopeProviderFromBinary(
                     libraryName = "stdlib"
                 }
             )
-            binaryModule = addModule(
-                buildKtLibraryModule {
-                    addBinaryRoot(input.path)
-                    platform = NativePlatforms.unspecifiedNativePlatform
-                    libraryName = input.name
-                    addRegularDependency(stdlib)
-                }
-            )
+            binaryModule = addModule(addModuleForSwiftExportConsumption(input, stdlib))
+            val kaDeps = dependencies.map {
+                addModule(addModuleForSwiftExportConsumption(it, stdlib))
+            }
             // It's a pure hack: Analysis API does not properly work without root source modules.
             fakeSourceModule = addModule(
                 buildKtSourceModule {
@@ -136,6 +131,7 @@ private fun createModuleWithScopeProviderFromBinary(
                     moduleName = "fakeSourceModule"
                     addRegularDependency(binaryModule)
                     addRegularDependency(stdlib)
+                    kaDeps.forEach { addRegularDependency(it) }
                 }
             )
         }
@@ -143,4 +139,14 @@ private fun createModuleWithScopeProviderFromBinary(
     return ModuleWithScopeProvider(fakeSourceModule, binaryModule) { analysisSession ->
         listOf(KlibScope(binaryModule, analysisSession))
     }
+}
+
+private fun KtModuleProviderBuilder.addModuleForSwiftExportConsumption(
+    input: InputModule,
+    stdlib: KaLibraryModule,
+): KaLibraryModule = buildKtLibraryModule {
+    addBinaryRoot(input.path)
+    platform = NativePlatforms.unspecifiedNativePlatform
+    libraryName = input.name
+    addRegularDependency(stdlib)
 }

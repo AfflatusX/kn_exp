@@ -13,11 +13,8 @@ import org.jetbrains.kotlin.fir.declarations.FirAnonymousFunction
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.declarations.FirValueParameter
 import org.jetbrains.kotlin.fir.declarations.utils.isInline
-import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
-import org.jetbrains.kotlin.fir.expressions.FirExpression
-import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
-import org.jetbrains.kotlin.fir.expressions.FirWrappedArgumentExpression
-import org.jetbrains.kotlin.fir.resolve.calls.FirNamedReferenceWithCandidate
+import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.resolve.calls.candidate.FirNamedReferenceWithCandidate
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.isNonReflectFunctionType
 
@@ -29,7 +26,7 @@ tailrec fun FirExpression.unwrapAnonymousFunctionExpression(): FirAnonymousFunct
 
 fun FirFunctionCall.replaceLambdaArgumentInvocationKinds(session: FirSession) {
     val calleeReference = calleeReference as? FirNamedReferenceWithCandidate ?: return
-    val argumentMapping = calleeReference.candidate.argumentMapping ?: return
+    val argumentMapping = calleeReference.candidate.argumentMapping
     val function = calleeReference.candidateSymbol.fir as? FirSimpleFunction ?: return
     val isInline = function.isInline
 
@@ -43,7 +40,7 @@ fun FirFunctionCall.replaceLambdaArgumentInvocationKinds(session: FirSession) {
     if (byParameter.isEmpty() && !isInline) return
 
     for ((argument, parameter) in argumentMapping) {
-        val lambda = argument.unwrapAnonymousFunctionExpression() ?: continue
+        val lambda = argument.expression.unwrapAnonymousFunctionExpression() ?: continue
         val kind = byParameter[parameter] ?: EventOccurrencesRange.UNKNOWN.takeIf {
             // Inline functional parameters have to be called in-place; that's the only permitted operation on them.
             isInline && !parameter.isNoinline && !parameter.isCrossinline &&

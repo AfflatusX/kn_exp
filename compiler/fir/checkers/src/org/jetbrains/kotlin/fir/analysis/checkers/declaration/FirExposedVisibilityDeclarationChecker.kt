@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.fir.analysis.checkers.declaration
 
 import org.jetbrains.kotlin.KtFakeSourceElementKind
+import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
@@ -20,6 +21,7 @@ import org.jetbrains.kotlin.fir.declarations.utils.expandedConeType
 import org.jetbrains.kotlin.fir.declarations.utils.fromPrimaryConstructor
 import org.jetbrains.kotlin.fir.declarations.utils.isFromSealedClass
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
+import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
@@ -41,7 +43,7 @@ object FirExposedVisibilityDeclarationChecker : FirBasicDeclarationChecker(MppCh
 
     private fun checkClass(declaration: FirRegularClass, reporter: DiagnosticReporter, context: CheckerContext) {
         checkSupertypes(declaration, reporter, context)
-        checkParameterBounds(declaration, reporter, context)
+        checkParameterBounds(declaration, declaration.effectiveVisibility, reporter, context)
     }
 
     private fun checkSupertypes(declaration: FirRegularClass, reporter: DiagnosticReporter, context: CheckerContext) {
@@ -52,7 +54,7 @@ object FirExposedVisibilityDeclarationChecker : FirBasicDeclarationChecker(MppCh
         val isInterface = declaration.classKind == ClassKind.INTERFACE
         for (supertypeRef in supertypes) {
             if (supertypeRef.source?.kind == KtFakeSourceElementKind.EnumSuperTypeRef) continue
-            val supertype = supertypeRef.coneTypeSafe<ConeClassLikeType>() ?: continue
+            val supertype = supertypeRef.coneType
             val classSymbol = supertype.toRegularClassSymbol(context.session) ?: continue
             val superIsInterface = classSymbol.classKind == ClassKind.INTERFACE
             if (superIsInterface != isInterface) {
@@ -70,17 +72,29 @@ object FirExposedVisibilityDeclarationChecker : FirBasicDeclarationChecker(MppCh
         }
     }
 
-    private fun checkParameterBounds(declaration: FirRegularClass, reporter: DiagnosticReporter, context: CheckerContext) {
-        val classVisibility = declaration.effectiveVisibility
+    private fun checkParameterBounds(
+        declaration: FirTypeParameterRefsOwner,
+        visibility: EffectiveVisibility,
+        reporter: DiagnosticReporter,
+        context: CheckerContext,
+    ) {
+        if (visibility == EffectiveVisibility.Local) return
 
-        if (classVisibility == EffectiveVisibility.Local) return
+        val reportProperError = context.languageVersionSettings.supportsFeature(
+            LanguageFeature.ReportExposedTypeForMoreCasesOfTypeParameterBounds
+        )
+        val diagnosticForBounds = when {
+            reportProperError || declaration is FirRegularClass -> FirErrors.EXPOSED_TYPE_PARAMETER_BOUND
+            else -> FirErrors.EXPOSED_TYPE_PARAMETER_BOUND_DEPRECATION_WARNING
+        }
+
         for (parameter in declaration.typeParameters) {
             for (bound in parameter.symbol.resolvedBounds) {
-                val (restricting, restrictingVisibility) = bound.coneType.findVisibilityExposure(context, classVisibility) ?: continue
+                val (restricting, restrictingVisibility) = bound.coneType.findVisibilityExposure(context, visibility) ?: continue
                 reporter.reportOn(
                     bound.source,
-                    FirErrors.EXPOSED_TYPE_PARAMETER_BOUND,
-                    classVisibility,
+                    diagnosticForBounds,
+                    visibility,
                     restricting,
                     restrictingVisibility,
                     context
@@ -94,6 +108,7 @@ object FirExposedVisibilityDeclarationChecker : FirBasicDeclarationChecker(MppCh
         val typeAliasVisibility = declaration.effectiveVisibility
 
         if (typeAliasVisibility == EffectiveVisibility.Local) return
+        checkParameterBounds(declaration, typeAliasVisibility, reporter, context)
         val (restricting, restrictingVisibility) = expandedType?.findVisibilityExposure(context, typeAliasVisibility) ?: return
         reporter.reportOn(
             declaration.source,
@@ -174,6 +189,8 @@ object FirExposedVisibilityDeclarationChecker : FirBasicDeclarationChecker(MppCh
         if (isNonLocal) {
             checkMemberReceiver(declaration.receiverParameter?.typeRef, declaration as? FirCallableDeclaration, reporter, context)
         }
+
+        checkParameterBounds(declaration, functionVisibility, reporter, context)
     }
 
     private fun checkProperty(declaration: FirProperty, reporter: DiagnosticReporter, context: CheckerContext) {
@@ -197,6 +214,7 @@ object FirExposedVisibilityDeclarationChecker : FirBasicDeclarationChecker(MppCh
                 )
             }
         checkMemberReceiver(declaration.receiverParameter?.typeRef, declaration, reporter, context)
+        checkParameterBounds(declaration, propertyVisibility, reporter, context)
     }
 
     private fun checkMemberReceiver(

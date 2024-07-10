@@ -1,11 +1,10 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
 package org.jetbrains.kotlin.fir.pipeline
 
-import com.intellij.openapi.progress.ProcessCanceledException
 import org.jetbrains.kotlin.backend.common.CodegenUtil
 import org.jetbrains.kotlin.backend.common.IrSpecialAnnotationsProvider
 import org.jetbrains.kotlin.backend.common.actualizer.*
@@ -75,7 +74,6 @@ fun FirResult.convertToIrAndActualize(
     fir2IrConfiguration: Fir2IrConfiguration,
     irGeneratorExtensions: Collection<IrGenerationExtension>,
     irMangler: KotlinMangler.IrMangler,
-    firMangler: FirMangler,
     visibilityConverter: Fir2IrVisibilityConverter,
     kotlinBuiltIns: KotlinBuiltIns,
     typeSystemContextProvider: (IrBuiltIns) -> IrTypeSystemContext,
@@ -89,7 +87,6 @@ fun FirResult.convertToIrAndActualize(
         fir2IrConfiguration,
         irGeneratorExtensions,
         irMangler,
-        firMangler,
         visibilityConverter,
         kotlinBuiltIns,
         typeSystemContextProvider,
@@ -106,7 +103,6 @@ private class Fir2IrPipeline(
     val fir2IrConfiguration: Fir2IrConfiguration,
     val irGeneratorExtensions: Collection<IrGenerationExtension>,
     val irMangler: KotlinMangler.IrMangler,
-    val firMangler: FirMangler,
     val visibilityConverter: Fir2IrVisibilityConverter,
     val kotlinBuiltIns: KotlinBuiltIns,
     val typeSystemContextProvider: (IrBuiltIns) -> IrTypeSystemContext,
@@ -132,7 +128,7 @@ private class Fir2IrPipeline(
     }
 
     private fun runFir2IrConversion(): Fir2IrConversionResult {
-        val commonMemberStorage = Fir2IrCommonMemberStorage(firMangler)
+        val commonMemberStorage = Fir2IrCommonMemberStorage()
 
         val firProvidersWithGeneratedFiles: MutableMap<FirModuleData, FirProviderWithGeneratedFiles> = mutableMapOf()
         for (firOutput in outputs) {
@@ -213,24 +209,37 @@ private class Fir2IrPipeline(
 
         generateSyntheticBodiesOfDataValueMembers()
 
-        val fakeOverrideBuilder = createFakeOverrideBuilder()
-        buildFakeOverrides(fakeOverrideBuilder)
+        val (fakeOverrideStrategy, delegatedMembersGenerationStrategy) = buildFakeOverridesAndPlatformSpecificDeclarations(irActualizer)
 
         val expectActualMap = irActualizer?.actualizeCallablesAndMergeModules() ?: IrExpectActualMap()
 
+        val pluginContext = Fir2IrPluginContext(componentsStorage, irBuiltIns, componentsStorage.moduleDescriptor, symbolTable)
+        if (fir2IrConfiguration.diagnosticReporter.hasErrors) {
+            irActualizer?.runChecksAndFinalize(expectActualMap)
+            return Fir2IrActualizedResult(
+                mainIrFragment, componentsStorage, pluginContext, irActualizedResult = null, irBuiltIns, symbolTable
+            )
+        }
+
         val fakeOverrideResolver = SpecialFakeOverrideSymbolsResolver(expectActualMap)
         resolveFakeOverrideSymbols(fakeOverrideResolver)
+        delegatedMembersGenerationStrategy.updateMetadataSources(
+            commonMemberStorage.firClassesWithInheritanceByDelegation,
+            outputs.last().session,
+            outputs.last().scopeSession,
+            componentsStorage.declarationStorage,
+            fakeOverrideResolver
+        )
 
         evaluateConstants()
 
         val actualizationResult = irActualizer?.runChecksAndFinalize(expectActualMap)
 
         fakeOverrideResolver.cacheFakeOverridesOfAllClasses(mainIrFragment)
-        (fakeOverrideBuilder.strategy as Fir2IrFakeOverrideStrategy).clearFakeOverrideFields()
+        fakeOverrideStrategy.clearFakeOverrideFields()
 
         removeGeneratedBuiltinsDeclarationsIfNeeded()
 
-        val pluginContext = Fir2IrPluginContext(componentsStorage, irBuiltIns, componentsStorage.moduleDescriptor, symbolTable)
         pluginContext.applyIrGenerationExtensions(mainIrFragment, irGeneratorExtensions)
 
         return Fir2IrActualizedResult(mainIrFragment, componentsStorage, pluginContext, actualizationResult, irBuiltIns, symbolTable)
@@ -263,17 +272,34 @@ private class Fir2IrPipeline(
             )
     }
 
-    private fun Fir2IrConversionResult.createFakeOverrideBuilder(): IrFakeOverrideBuilder {
+    private fun Fir2IrConversionResult.createFakeOverrideBuilder(
+        irActualizer: IrActualizer?
+    ): Pair<IrFakeOverrideBuilder, Fir2IrDelegatedMembersGenerationStrategy> {
         val session = componentsStorage.session
+        val delegatedMembersGenerationStrategy = Fir2IrDelegatedMembersGenerationStrategy(
+            symbolTable.irFactory, irBuiltIns, fir2IrExtensions, commonMemberStorage.delegatedClassesInfo,
+            irActualizer?.classActualizationInfo,
+        )
         return IrFakeOverrideBuilder(
             irTypeSystemContext,
             Fir2IrFakeOverrideStrategy(
                 Fir2IrConverter.friendModulesMap(session),
                 isGenericClashFromSameSupertypeAllowed = session.moduleData.platform.isJvm(),
                 isOverrideOfPublishedApiFromOtherModuleDisallowed = session.moduleData.platform.isJvm(),
+                delegatedMembersGenerationStrategy,
             ),
             componentsStorage.extensions.externalOverridabilityConditions
-        )
+        ) to delegatedMembersGenerationStrategy
+    }
+
+    private fun Fir2IrConversionResult.buildFakeOverridesAndPlatformSpecificDeclarations(
+        irActualizer: IrActualizer?
+    ): Pair<Fir2IrFakeOverrideStrategy, Fir2IrDelegatedMembersGenerationStrategy> {
+        val (fakeOverrideBuilder, delegatedMembersGenerationStrategy) = createFakeOverrideBuilder(irActualizer)
+        buildFakeOverrides(fakeOverrideBuilder)
+        delegatedMembersGenerationStrategy.generateDelegatedBodies()
+        val fakeOverrideStrategy = fakeOverrideBuilder.strategy as Fir2IrFakeOverrideStrategy
+        return fakeOverrideStrategy to delegatedMembersGenerationStrategy
     }
 
     private fun Fir2IrConversionResult.buildFakeOverrides(fakeOverrideBuilder: IrFakeOverrideBuilder) {
@@ -341,8 +367,6 @@ private class Fir2IrPipeline(
             for (file in module.files) {
                 try {
                     file.acceptVoid(ClassVisitor())
-                } catch (e: ProcessCanceledException) {
-                    throw e
                 } catch (e: Throwable) {
                     CodegenUtil.reportBackendException(e, "IR fake override builder", file.fileEntry.name) { offset ->
                         file.fileEntry.takeIf { it.supportsDebugInfo }?.let {
@@ -391,13 +415,12 @@ private class Fir2IrPipeline(
         }
     }
 
-    /** If `stdlibCompilation` mode is enabled, there are files with synthetic declarations.
+    /** If `stdlibCompilation` mode is enabled, there could be files with synthetic declarations.
      *  All of them should be generated before FIR2IR conversion and removed after the actualizaiton.
      */
     private fun Fir2IrConversionResult.removeGeneratedBuiltinsDeclarationsIfNeeded() {
         if (fir2IrConfiguration.languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation)) {
-            val isAnyFileRemoved = mainIrFragment.files.removeAll { it.name == generatedBuiltinsDeclarationsFileName }
-            require(isAnyFileRemoved)
+            mainIrFragment.files.removeAll { it.name == generatedBuiltinsDeclarationsFileName }
         }
     }
 }

@@ -51,6 +51,7 @@ fun copyCommonCompilerArguments(from: CommonCompilerArguments, to: CommonCompile
     to.newInference = from.newInference
     to.noCheckActual = from.noCheckActual
     to.noInline = from.noInline
+    to.nonLocalBreakContinue = from.nonLocalBreakContinue
     to.optIn = from.optIn?.copyOf()
     to.phasesToDump = from.phasesToDump?.copyOf()
     to.phasesToDumpAfter = from.phasesToDumpAfter?.copyOf()
@@ -83,6 +84,7 @@ fun copyCommonCompilerArguments(from: CommonCompilerArguments, to: CommonCompile
     to.verbosePhases = from.verbosePhases?.copyOf()
     to.verifyIr = from.verifyIr
     to.verifyIrVisibility = from.verifyIrVisibility
+    to.verifyIrVisibilityAfterInlining = from.verifyIrVisibilityAfterInlining
     to.whenGuards = from.whenGuards
 
     return to

@@ -12,8 +12,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.backend.*
 import org.jetbrains.kotlin.fir.backend.utils.*
-import org.jetbrains.kotlin.fir.backend.utils.convertCatching
-import org.jetbrains.kotlin.fir.backend.utils.implicitCast
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
 import org.jetbrains.kotlin.fir.declarations.utils.isInterface
@@ -164,7 +162,7 @@ class CallAndReferenceGenerator(
                 )
             }
 
-            fun convertReferenceToField(fieldSymbol: FirFieldSymbol): IrExpression? {
+            fun convertReferenceToField(fieldSymbol: FirFieldSymbol): IrExpression {
                 val field = fieldSymbol.fir
                 val irPropertySymbol = fieldSymbol.toSymbolForCall() as IrPropertySymbol
                 val irFieldSymbol = declarationStorage.findBackingFieldOfProperty(irPropertySymbol)!!
@@ -283,8 +281,8 @@ class CallAndReferenceGenerator(
             return null
         }
         val superTypeRef = dispatchReceiverReference.superTypeRef
-        val coneSuperType = superTypeRef.coneTypeSafe<ConeClassLikeType>() ?: return null
-        val firClassSymbol = coneSuperType.fullyExpandedType(session).lookupTag.toSymbol(session) as? FirClassSymbol<*>
+        val coneSuperType = superTypeRef.coneType
+        val firClassSymbol = coneSuperType.fullyExpandedType(session).toClassSymbol(session)
         if (firClassSymbol != null) {
             return classifierStorage.getIrClassSymbol(firClassSymbol)
         }
@@ -317,7 +315,7 @@ class CallAndReferenceGenerator(
                     return type.intersectedTypes.first {
                         val componentConstructor = with(typeContext) { it.lowerBoundIfFlexible().typeConstructor() }
                         AbstractTypeChecker.isSubtypeOfClass(
-                            typeContext.newTypeCheckerState(errorTypesEqualToAnything = false, stubTypesEqualToAnything = false),
+                            typeContext,
                             componentConstructor,
                             containingClassLookupTag
                         )
@@ -884,38 +882,42 @@ class CallAndReferenceGenerator(
     }
 
     fun convertToIrConstructorCall(annotation: FirAnnotation): IrExpression {
-        val coneType = annotation.annotationTypeRef.coneTypeSafe<ConeLookupTagBasedType>()
-            ?.fullyExpandedType(session) as? ConeLookupTagBasedType
-        val type = coneType?.toIrType()
-        val symbol = type?.classifierOrNull
+        val coneType = annotation.annotationTypeRef.coneType.fullyExpandedType(session)
+        val type = coneType.toIrType()
+        val symbol = type.classifierOrNull
+        val firConstructorSymbol = (annotation.toResolvedCallableSymbol(session) as? FirConstructorSymbol)
+            ?: run {
+                // Fallback for FirReferencePlaceholderForResolvedAnnotations from jar
+                val fir = coneType.toClassSymbol(session)?.fir
+                var constructorSymbol: FirConstructorSymbol? = null
+                fir?.unsubstitutedScope(c)?.processDeclaredConstructors {
+                    if (it.fir.isPrimary && constructorSymbol == null) {
+                        constructorSymbol = it
+                    }
+                }
+                constructorSymbol
+            }
         val irConstructorCall = annotation.convertWithOffsets { startOffset, endOffset ->
+            // This `if` can't be replaced with `when` yet, because smart casts won't work :(
             if (symbol !is IrClassSymbol) {
                 return@convertWithOffsets IrErrorCallExpressionImpl(
-                    startOffset, endOffset, type ?: createErrorType(), "Unresolved reference: ${annotation.render()}"
+                    startOffset, endOffset, type, "Unresolved reference: ${annotation.render()}"
                 )
-            }
-
-            val firConstructorSymbol = annotation.toResolvedCallableSymbol(session) as? FirConstructorSymbol
-                ?: run {
-                    // Fallback for FirReferencePlaceholderForResolvedAnnotations from jar
-                    val fir = coneType.lookupTag.toSymbol(session)?.fir as? FirClass
-                    var constructorSymbol: FirConstructorSymbol? = null
-                    fir?.unsubstitutedScope(c)?.processDeclaredConstructors {
-                        if (it.fir.isPrimary && constructorSymbol == null) {
-                            constructorSymbol = it
-                        }
-                    }
-                    constructorSymbol
-                } ?: return@convertWithOffsets IrErrorCallExpressionImpl(
+            } else if (firConstructorSymbol == null) {
+                return@convertWithOffsets IrErrorCallExpressionImpl(
                     startOffset, endOffset, type, "No annotation constructor found: $symbol"
                 )
+            }
 
             // Annotation constructor may come unresolved on partial module compilation (inside the IDE).
             // Here it is resolved together with default parameter values, as transformers convert them to constants.
             // Also see 'IrConstAnnotationTransformer'.
             firConstructorSymbol.lazyResolveToPhase(FirResolvePhase.BODY_RESOLVE)
 
-            val irConstructor = declarationStorage.getIrConstructorSymbol(firConstructorSymbol)
+            val fullyExpandedConstructorSymbol = firConstructorSymbol.let {
+                it.fir.originalConstructorIfTypeAlias?.unwrapUseSiteSubstitutionOverrides()?.symbol ?: it
+            }
+            val irConstructor = declarationStorage.getIrConstructorSymbol(fullyExpandedConstructorSymbol)
 
             IrConstructorCallImpl(
                 startOffset, endOffset, type, irConstructor,
@@ -925,7 +927,7 @@ class CallAndReferenceGenerator(
                 // `irConstructor.owner.valueParameters.size`.
                 // See KT-58294
                 valueArgumentsCount = firConstructorSymbol.valueParameterSymbols.size,
-                typeArgumentsCount = annotation.typeArguments.size,
+                typeArgumentsCount = fullyExpandedConstructorSymbol.typeParameterSymbols.size,
                 constructorTypeArgumentsCount = 0
             )
         }
@@ -933,7 +935,7 @@ class CallAndReferenceGenerator(
             val annotationCall = annotation.toAnnotationCall()
             irConstructorCall
                 .applyCallArguments(annotationCall)
-                .applyTypeArguments(annotationCall?.typeArguments, null)
+                .applyTypeArgumentsWithTypealiasConstructorRemapping(firConstructorSymbol?.fir, annotationCall?.typeArguments.orEmpty())
         }
     }
 
@@ -942,7 +944,7 @@ class CallAndReferenceGenerator(
         return buildAnnotationCall {
             useSiteTarget = this@toAnnotationCall.useSiteTarget
             annotationTypeRef = this@toAnnotationCall.annotationTypeRef
-            val symbol = annotationTypeRef.coneType.fullyExpandedType(session).toSymbol(session) as? FirRegularClassSymbol ?: return null
+            val symbol = annotationTypeRef.coneType.fullyExpandedType(session).toRegularClassSymbol(session) ?: return null
 
             val constructorSymbol = symbol.unsubstitutedScope(c).getDeclaredConstructors().firstOrNull() ?: return null
 
@@ -972,7 +974,7 @@ class CallAndReferenceGenerator(
         qualifier: FirResolvedQualifier,
         callableReferenceAccess: FirCallableReferenceAccess?,
     ): IrExpression? {
-        val classSymbol = (qualifier.resolvedType as? ConeClassLikeType)?.lookupTag?.toSymbol(session)
+        val classSymbol = qualifier.resolvedType.toClassLikeSymbol(session)
 
         if (callableReferenceAccess?.isBound == false) {
             return null
@@ -1132,12 +1134,12 @@ class CallAndReferenceGenerator(
                         val value = if (function?.itOrExpectHasDefaultParameterValue(index) == true) {
                             null
                         } else {
-                            val elementType = parameter.returnTypeRef.toIrType()
+                            val varargType = parameter.returnTypeRef.toIrType()
                             IrVarargImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                elementType,
-                                elementType.toArrayOrPrimitiveArrayType(builtins)
+                                varargType,
+                                varargType.getArrayElementType(builtins)
                             )
                         }
                         putValueArgument(index, value)
@@ -1284,11 +1286,18 @@ class CallAndReferenceGenerator(
         }
     }
 
-    internal fun IrExpression.applyTypeArguments(access: FirQualifiedAccessExpression): IrExpression {
-        val calleeReference = access.calleeReference
-        val originalTypeArguments = access.typeArguments
-        val callableFir = calleeReference.toResolvedCallableSymbol()?.fir
+    internal fun IrExpression.applyTypeArguments(access: FirQualifiedAccessExpression): IrExpression =
+        applyTypeArgumentsWithTypealiasConstructorRemapping(access.calleeReference.toResolvedCallableSymbol()?.fir, access.typeArguments)
 
+    /**
+     * Should be used whenever a [callableFir] representing a constructor produced by typealias
+     * expansion gets manually unwrapped to the original constructor.
+     * If you manually unwrap the constructor, you must manually remap the type arguments.
+     */
+    private fun IrExpression.applyTypeArgumentsWithTypealiasConstructorRemapping(
+        callableFir: FirCallableDeclaration?,
+        originalTypeArguments: List<FirTypeProjection>,
+    ): IrExpression {
         // If we have a constructor call through a type alias, we can't apply the type arguments as is.
         // The type arguments in FIR correspond to the original type arguments as passed to the type alias.
         // However, the type alias can map the type arguments arbitrarily (change order, change count by mapping K,V -> Map<K,V> or by
@@ -1299,7 +1308,6 @@ class CallAndReferenceGenerator(
             ?.typeAliasForConstructor
             ?.let { originalTypeArguments.toExpandedTypeArguments(it) }
             ?: originalTypeArguments
-
 
         return applyTypeArguments(
             typeArguments,

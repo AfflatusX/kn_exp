@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.ir.descriptors.toIrBasedKotlinType
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrCompositeImpl
+import org.jetbrains.kotlin.ir.expressions.impl.fromSymbolOwner
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.IrValueParameterSymbol
@@ -149,7 +150,7 @@ class ExpressionCodegen(
     var finallyDepth = 0
 
     val enclosingFunctionForLocalObjects: IrFunction
-        get() = generateSequence(irFunction) { context.enclosingMethodOverride[it] }.last()
+        get() = generateSequence(irFunction) { it.enclosingMethodOverride }.last()
 
     val context = classCodegen.context
     val typeMapper = classCodegen.typeMapper
@@ -339,7 +340,7 @@ class ExpressionCodegen(
     // * Hidden constructors with mangled parameters require non-null assertions (see KT-53492)
     private fun shouldGenerateNonNullAssertionsForPrivateFun(irFunction: IrFunction): Boolean {
         if (irFunction is IrSimpleFunction && irFunction.isOperator || irFunction.origin == IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA) return true
-        if (context.hiddenConstructorsWithMangledParams.containsKey(irFunction)) return true
+        if (irFunction is IrConstructor && irFunction.hiddenConstructorMangledParams != null) return true
         return false
     }
 
@@ -546,7 +547,7 @@ class ExpressionCodegen(
 
     private fun IrInlinedFunctionBlock.buildOrGetClassSMAP(data: BlockInfo): SMAP {
         if (this.isLambdaInlining()) {
-            return context.typeToCachedSMAP[context.getLocalClassType(this.inlinedElement as IrAttributeContainer)]!!
+            return context.typeToCachedSMAP[(this.inlinedElement as IrAttributeContainer).localClassType]!!
         }
 
         val callee = this.inlineDeclaration
@@ -1319,8 +1320,8 @@ class ExpressionCodegen(
             mv.areturn(Type.VOID_TYPE)
         } else {
             mv.fixStackAndJump(if (jump is IrBreak) stackElement.breakLabel else stackElement.continueLabel)
-            mv.mark(endLabel)
         }
+        mv.mark(endLabel)
         return unitValue
     }
 
@@ -1597,7 +1598,10 @@ class ExpressionCodegen(
         }
 
         val callee = element.symbol.owner
-        val typeArgumentContainer = if (callee is IrConstructor) callee.parentAsClass else callee
+        val typeArgumentContainer = when (callee) {
+            is IrConstructor -> callee.parentAsClass
+            is IrSimpleFunction -> callee
+        }
         val typeArguments =
             if (element.typeArgumentsCount == 0) {
                 //avoid ambiguity with type constructor type parameters

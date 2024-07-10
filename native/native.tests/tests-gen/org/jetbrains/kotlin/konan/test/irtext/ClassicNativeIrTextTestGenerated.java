@@ -1017,6 +1017,12 @@ public class ClassicNativeIrTextTestGenerated extends AbstractClassicNativeIrTex
         }
 
         @Test
+        @TestMetadata("expectedFun.kt")
+        public void testExpectedFun() {
+          runTest("compiler/testData/ir/irText/declarations/multiplatform/k1/expectedFun.kt");
+        }
+
+        @Test
         @TestMetadata("expectedSealedClass.kt")
         public void testExpectedSealedClass() {
           runTest("compiler/testData/ir/irText/declarations/multiplatform/k1/expectedSealedClass.kt");
@@ -2010,6 +2016,12 @@ public class ClassicNativeIrTextTestGenerated extends AbstractClassicNativeIrTex
     @TestMetadata("vararg.kt")
     public void testVararg() {
       runTest("compiler/testData/ir/irText/expressions/vararg.kt");
+    }
+
+    @Test
+    @TestMetadata("varargListOfJsStatement.kt")
+    public void testVarargListOfJsStatement() {
+      runTest("compiler/testData/ir/irText/expressions/varargListOfJsStatement.kt");
     }
 
     @Test

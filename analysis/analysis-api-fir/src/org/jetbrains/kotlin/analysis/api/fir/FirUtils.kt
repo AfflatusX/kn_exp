@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2023 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.fir.scopes.unsubstitutedScope
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
-import org.jetbrains.kotlin.fir.types.toClassSymbol
+import org.jetbrains.kotlin.fir.resolve.toClassSymbol
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.JvmStandardClassIds
 import org.jetbrains.kotlin.psi.KtCallElement
@@ -44,13 +44,13 @@ import org.jetbrains.kotlin.util.OperatorNameConventions
 internal fun FirBasedSymbol<*>.isInvokeFunction() =
     (this as? FirNamedFunctionSymbol)?.fir?.name == OperatorNameConventions.INVOKE
 
-fun FirFunctionCall.getCalleeSymbol(): FirBasedSymbol<*>? =
+internal fun FirFunctionCall.getCalleeSymbol(): FirBasedSymbol<*>? =
     calleeReference.getResolvedSymbolOfNameReference()
 
-fun FirFunctionCall.getCandidateSymbols(): Collection<FirBasedSymbol<*>> =
+internal fun FirFunctionCall.getCandidateSymbols(): Collection<FirBasedSymbol<*>> =
     calleeReference.getCandidateSymbols()
 
-fun FirReference.getResolvedSymbolOfNameReference(): FirBasedSymbol<*>? =
+internal fun FirReference.getResolvedSymbolOfNameReference(): FirBasedSymbol<*>? =
     (this as? FirResolvedNamedReference)?.resolvedSymbol
 
 internal fun FirReference.getResolvedKtSymbolOfNameReference(builder: KaSymbolByFirBuilder): KaSymbol? =
@@ -83,7 +83,7 @@ internal fun FirAnnotation.toKaAnnotation(
     argumentsFactory: (ClassId?) -> List<KaNamedAnnotationValue>
 ): KaAnnotation {
     val constructorSymbol = findAnnotationConstructor(this, builder.rootSession)
-        ?.let(builder.functionLikeBuilder::buildConstructorSymbol)
+        ?.let(builder.functionBuilder::buildConstructorSymbol)
 
     val classId = toAnnotationClassId(builder.rootSession)
 
@@ -136,7 +136,7 @@ private fun findAnnotationConstructor(annotation: FirAnnotation, session: LLFirS
 internal val FirResolvedQualifier.isImplicitDispatchReceiver: Boolean
     get() = source?.kind == KtFakeSourceElementKind.ImplicitReceiver
 
-fun FirAnnotationContainer.getJvmNameFromAnnotation(session: FirSession, target: AnnotationUseSiteTarget? = null): String? {
+internal fun FirAnnotationContainer.getJvmNameFromAnnotation(session: FirSession, target: AnnotationUseSiteTarget? = null): String? {
     val annotationCalls = getAnnotationsByClassId(JvmStandardClassIds.Annotations.JvmName, session)
     return annotationCalls.firstNotNullOfOrNull { call ->
         call.getStringArgument(StandardNames.NAME, session)

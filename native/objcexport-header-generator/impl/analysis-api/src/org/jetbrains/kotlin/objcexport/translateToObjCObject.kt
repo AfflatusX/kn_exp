@@ -1,23 +1,28 @@
+/*
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
+ */
+
 package org.jetbrains.kotlin.objcexport
 
-import org.jetbrains.kotlin.analysis.api.KtAnalysisSession
-import org.jetbrains.kotlin.analysis.api.symbols.KtClassKind
-import org.jetbrains.kotlin.analysis.api.symbols.KtClassOrObjectSymbol
-import org.jetbrains.kotlin.analysis.api.symbols.markers.KtSymbolWithModality
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.symbols.KaClassKind
+import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaSymbolModality
 import org.jetbrains.kotlin.backend.konan.objcexport.*
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.objcexport.analysisApiUtils.isVisibleInObjC
 import org.jetbrains.kotlin.objcexport.extras.objCTypeExtras
 import org.jetbrains.kotlin.objcexport.extras.originClassId
 import org.jetbrains.kotlin.objcexport.extras.requiresForwardDeclaration
 
-context(KtAnalysisSession, KtObjCExportSession)
-fun KtClassOrObjectSymbol.translateToObjCObject(): ObjCClass? {
-    require(classKind == KtClassKind.OBJECT || classKind == KtClassKind.COMPANION_OBJECT)
+context(KaSession, KtObjCExportSession)
+@Suppress("CONTEXT_RECEIVERS_DEPRECATED")
+fun KaClassSymbol.translateToObjCObject(): ObjCClass? {
+    require(classKind == KaClassKind.OBJECT || classKind == KaClassKind.COMPANION_OBJECT)
     if (!isVisibleInObjC()) return null
 
-    val enumKind = this.classKind == KtClassKind.ENUM_CLASS
-    val final = if (this is KtSymbolWithModality) this.modality == Modality.FINAL else false
+    val enumKind = this.classKind == KaClassKind.ENUM_CLASS
+    val final = this.modality == KaSymbolModality.FINAL
     val name = getObjCClassOrProtocolName()
     val attributes = (if (enumKind || final) listOf(OBJC_SUBCLASSING_RESTRICTED) else emptyList()) + name.toNameAttributes()
     val comment: ObjCComment? = annotations.translateToObjCComment()
@@ -30,7 +35,7 @@ fun KtClassOrObjectSymbol.translateToObjCObject(): ObjCClass? {
     val objectMembers = mutableListOf<ObjCExportStub>()
     objectMembers += translateToObjCConstructors()
     objectMembers += getDefaultMembers()
-    objectMembers += getDeclaredMemberScope().getCallableSymbols()
+    objectMembers += declaredMemberScope.callables
         .sortedWith(StableCallableOrder)
         .flatMap { it.translateToObjCExportStub() }
 
@@ -48,8 +53,9 @@ fun KtClassOrObjectSymbol.translateToObjCObject(): ObjCClass? {
     )
 }
 
-context(KtAnalysisSession, KtObjCExportSession)
-private fun KtClassOrObjectSymbol.getDefaultMembers(): List<ObjCExportStub> {
+context(KaSession, KtObjCExportSession)
+@Suppress("CONTEXT_RECEIVERS_DEPRECATED")
+private fun KaClassSymbol.getDefaultMembers(): List<ObjCExportStub> {
 
     val result = mutableListOf<ObjCExportStub>()
 
@@ -84,8 +90,9 @@ private fun KtClassOrObjectSymbol.getDefaultMembers(): List<ObjCExportStub> {
  * Use translateToObjCReferenceType() to make type
  * See also: [org.jetbrains.kotlin.backend.konan.objcexport.ObjCExportTranslatorImpl.mapReferenceType]
  */
-context(KtAnalysisSession, KtObjCExportSession)
-private fun KtClassOrObjectSymbol.toPropertyType() = ObjCClassType(
+context(KaSession, KtObjCExportSession)
+@Suppress("CONTEXT_RECEIVERS_DEPRECATED")
+private fun KaClassSymbol.toPropertyType() = ObjCClassType(
     className = getObjCClassOrProtocolName().objCName,
     typeArguments = emptyList(),
     extras = objCTypeExtras {
@@ -97,8 +104,9 @@ private fun KtClassOrObjectSymbol.toPropertyType() = ObjCClassType(
 /**
  * [org.jetbrains.kotlin.backend.konan.objcexport.ObjCExportNamerImpl.getObjectInstanceSelector]
  */
-context(KtAnalysisSession, KtObjCExportSession)
-private fun getObjectInstanceSelector(objectSymbol: KtClassOrObjectSymbol): String {
+context(KaSession, KtObjCExportSession)
+@Suppress("CONTEXT_RECEIVERS_DEPRECATED")
+private fun getObjectInstanceSelector(objectSymbol: KaClassSymbol): String {
     return objectSymbol.getObjCClassOrProtocolName(bareName = true)
         .objCName
         .replaceFirstChar(Char::lowercaseChar)
@@ -108,8 +116,9 @@ private fun getObjectInstanceSelector(objectSymbol: KtClassOrObjectSymbol): Stri
 /**
  * [org.jetbrains.kotlin.backend.konan.objcexport.ObjCExportNamerImpl.getObjectPropertySelector]
  */
-context(KtAnalysisSession, KtObjCExportSession)
-private fun getObjectPropertySelector(descriptor: KtClassOrObjectSymbol): String {
+context(KaSession, KtObjCExportSession)
+@Suppress("CONTEXT_RECEIVERS_DEPRECATED")
+private fun getObjectPropertySelector(descriptor: KaClassSymbol): String {
     val collides = ObjCPropertyNames.objectPropertyName == getObjectInstanceSelector(descriptor)
     return ObjCPropertyNames.objectPropertyName + (if (collides) "_" else "")
 }

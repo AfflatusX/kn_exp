@@ -32,9 +32,9 @@ private val validateIrBeforeLowering = makeIrModulePhase(
 )
 
 private val validateIrAfterInliningPhase = makeIrModulePhase(
-    ::IrValidationAfterInliningPhase,
-    name = "IrValidationAfterInliningPhase",
-    description = "Validate IR after inlining",
+    ::IrValidationAfterInliningAllFunctionsPhase,
+    name = "IrValidationAfterInliningAllFunctionsPhase",
+    description = "Validate IR after all functions have been inlined",
 )
 
 private val validateIrAfterLowering = makeIrModulePhase(
@@ -85,17 +85,10 @@ private val rangeContainsLoweringPhase = makeIrModulePhase(
     description = "[Optimization] Optimizes calls to contains() for ClosedRanges"
 )
 
-private val arrayConstructorReferencePhase = makeIrModulePhase(
-    ::WasmArrayConstructorReferenceLowering,
-    name = "ArrayConstructorReference",
-    description = "Transform `::Array` into a ::create#Array"
-)
-
 private val arrayConstructorPhase = makeIrModulePhase(
-    ::WasmArrayConstructorLowering,
+    ::ArrayConstructorLowering,
     name = "ArrayConstructor",
-    description = "Transform `Array(size) { index -> value }` into create#Array { index -> value } call",
-    prerequisite = setOf(arrayConstructorReferencePhase)
+    description = "Transform `Array(size) { index -> value }` into a loop",
 )
 
 private val sharedVariablesLoweringPhase = makeIrModulePhase(
@@ -638,6 +631,12 @@ val constEvaluationPhase = makeIrModulePhase(
     prerequisite = setOf(functionInliningPhase)
 )
 
+val inlineCallableReferenceToLambdaPhase = makeIrModulePhase(
+    ::WasmInlineCallableReferenceToLambdaPhase,
+    name = "WasmInlineCallableReferenceToLambdaPhase",
+    description = "Transform all callable reference (including defaults) to inline lambdas, mark inline lambdas for later passes"
+)
+
 val loweringList = listOf(
     validateIrBeforeLowering,
     jsCodeCallsLowering,
@@ -649,13 +648,14 @@ val loweringList = listOf(
     lateinitDeclarationLoweringPhase,
     lateinitUsageLoweringPhase,
     rangeContainsLoweringPhase,
-    arrayConstructorReferencePhase,
-    arrayConstructorPhase,
+
     sharedVariablesLoweringPhase,
     localClassesInInlineLambdasPhase,
     localClassesInInlineFunctionsPhase,
     localClassesExtractionFromInlineFunctionsPhase,
 
+    inlineCallableReferenceToLambdaPhase,
+    arrayConstructorPhase,
     wrapInlineDeclarationsWithReifiedTypeParametersPhase,
 
     functionInliningPhase,

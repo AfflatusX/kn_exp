@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.backend.konan.*
 import org.jetbrains.kotlin.backend.konan.ir.implementedInterfaces
 import org.jetbrains.kotlin.backend.konan.ir.isAbstract
 import org.jetbrains.kotlin.backend.konan.ir.isBuiltInOperator
-import org.jetbrains.kotlin.backend.konan.ir.isFrozen
 import org.jetbrains.kotlin.backend.konan.llvm.computeFunctionName
 import org.jetbrains.kotlin.backend.konan.llvm.computeSymbolName
 import org.jetbrains.kotlin.backend.konan.llvm.isExported
@@ -18,7 +17,6 @@ import org.jetbrains.kotlin.backend.konan.lower.DECLARATION_ORIGIN_BRIDGE_METHOD
 import org.jetbrains.kotlin.backend.konan.lower.bridgeTarget
 import org.jetbrains.kotlin.backend.konan.lower.getDefaultValueForOverriddenBuiltinFunction
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.declarations.*
@@ -36,43 +34,25 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 internal object DataFlowIR {
+    abstract class Type(
+            val index: Int,
+            val isFinal: Boolean,
+            val isAbstract: Boolean,
+            val module: Module?,
+            val symbolTableIndex: Int,
+            val irClass: IrClass?,
+            val name: String?
+    ) {
+        val superTypes = mutableListOf<Type>()
+        val vtable = mutableListOf<FunctionSymbol>()
+        val itable = mutableMapOf<Int, List<FunctionSymbol>>()
 
-    abstract class Type(val isFinal: Boolean, val isAbstract: Boolean,
-                        val primitiveBinaryType: PrimitiveBinaryType?,
-                        val name: String?) {
         // Special marker type forbidding devirtualization on its instances.
-        object Virtual : Declared(0, false, true, null, null, -1, null, "\$VIRTUAL")
+        object Virtual : Type(0, false, true, null, -1, null, "\$VIRTUAL")
 
-        class External(val hash: Long, isFinal: Boolean, isAbstract: Boolean,
-                       primitiveBinaryType: PrimitiveBinaryType?, name: String? = null)
-            : Type(isFinal, isAbstract, primitiveBinaryType, name) {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is External) return false
-
-                return hash == other.hash
-            }
-
-            override fun hashCode(): Int {
-                return hash.hashCode()
-            }
-
-            override fun toString(): String {
-                return "ExternalType(hash='$hash', name='$name')"
-            }
-        }
-
-        abstract class Declared(val index: Int, isFinal: Boolean, isAbstract: Boolean, primitiveBinaryType: PrimitiveBinaryType?,
-                                val module: Module?, val symbolTableIndex: Int, val irClass: IrClass?, name: String?)
-            : Type(isFinal, isAbstract, primitiveBinaryType, name) {
-            val superTypes = mutableListOf<Type>()
-            val vtable = mutableListOf<FunctionSymbol>()
-            val itable = mutableMapOf<Int, List<FunctionSymbol>>()
-        }
-
-        class Public(val hash: Long, index: Int, isFinal: Boolean, isAbstract: Boolean, primitiveBinaryType: PrimitiveBinaryType?,
+        class Public(val hash: Long, index: Int, isFinal: Boolean, isAbstract: Boolean,
                      module: Module, symbolTableIndex: Int, irClass: IrClass?, name: String? = null)
-            : Declared(index, isFinal, isAbstract, primitiveBinaryType, module, symbolTableIndex, irClass, name) {
+            : Type(index, isFinal, isAbstract, module, symbolTableIndex, irClass, name) {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (other !is Public) return false
@@ -89,9 +69,9 @@ internal object DataFlowIR {
             }
         }
 
-        class Private(index: Int, isFinal: Boolean, isAbstract: Boolean, primitiveBinaryType: PrimitiveBinaryType?,
+        class Private(index: Int, isFinal: Boolean, isAbstract: Boolean,
                       module: Module, symbolTableIndex: Int, irClass: IrClass?, name: String? = null)
-            : Declared(index, isFinal, isAbstract, primitiveBinaryType, module, symbolTableIndex, irClass, name) {
+            : Type(index, isFinal, isAbstract, module, symbolTableIndex, irClass, name) {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (other !is Private) return false
@@ -159,9 +139,7 @@ internal object DataFlowIR {
 
         abstract class Declared(val module: Module, val symbolTableIndex: Int,
                                 attributes: Int, irDeclaration: IrDeclaration?, var bridgeTarget: FunctionSymbol?, name: String?)
-            : FunctionSymbol(attributes, irDeclaration, name) {
-
-        }
+            : FunctionSymbol(attributes, irDeclaration, name)
 
         class Public(val hash: Long, module: Module, symbolTableIndex: Int,
                      attributes: Int, irDeclaration: IrDeclaration?, bridgeTarget: FunctionSymbol?, name: String? = null)
@@ -444,6 +422,7 @@ internal object DataFlowIR {
         val classMap = mutableMapOf<IrClass, Type>()
         val primitiveMap = mutableMapOf<PrimitiveBinaryType, Type>()
         val functionMap = mutableMapOf<IrDeclaration, FunctionSymbol>()
+        val fieldMap = mutableMapOf<IrField, Field>()
 
         private val NAME_ESCAPES = Name.identifier("Escapes")
         private val NAME_POINTS_TO = Name.identifier("PointsTo")
@@ -484,6 +463,15 @@ internal object DataFlowIR {
             }, data = null)
         }
 
+        fun mapField(field: IrField): Field = fieldMap.getOrPut(field) {
+            val name = field.name.asString()
+            Field(
+                    mapType(field.type),
+                    1 + fieldMap.size,
+                    takeName { name }
+            )
+        }
+
         @OptIn(ObsoleteDescriptorBasedAPI::class)
         fun mapClassReferenceType(irClass: IrClass): Type {
             // Do not try to devirtualize ObjC classes.
@@ -498,10 +486,10 @@ internal object DataFlowIR {
             val placeToClassTable = true
             val symbolTableIndex = if (placeToClassTable) module.numberOfClasses++ else -1
             val type = if (irClass.isExported())
-                Type.Public(localHash(name.toByteArray()), privateTypeIndex++, isFinal, isAbstract, null,
+                Type.Public(localHash(name.toByteArray()), privateTypeIndex++, isFinal, isAbstract,
                         module, symbolTableIndex, irClass, takeName { name })
             else
-                Type.Private(privateTypeIndex++, isFinal, isAbstract, null,
+                Type.Private(privateTypeIndex++, isFinal, isAbstract,
                         module, symbolTableIndex, irClass, takeName { name })
 
             classMap[irClass] = type
@@ -559,7 +547,6 @@ internal object DataFlowIR {
                             privateTypeIndex++,
                             true,
                             false,
-                            primitiveBinaryType,
                             module,
                             -1,
                             null,
@@ -635,14 +622,10 @@ internal object DataFlowIR {
                     val placeToFunctionsTable = !isAbstract && it !is IrConstructor && irClass != null
                             && (it.isOverridableOrOverrides || bridgeTarget != null || function.isSpecial || !irClass.isFinalClass)
                     val symbolTableIndex = if (placeToFunctionsTable) module.numberOfFunctions++ else -1
-                    val frozen = it is IrConstructor && irClass!!.isFrozen(context)
                     val functionSymbol = if (it.isExported())
                         FunctionSymbol.Public(localHash(name.toByteArray()), module, symbolTableIndex, attributes, it, bridgeTargetSymbol, takeName { name })
                     else
                         FunctionSymbol.Private(privateFunIndex++, module, symbolTableIndex, attributes, it, bridgeTargetSymbol, takeName { name })
-                    if (frozen) {
-                        functionSymbol.escapes = 0b1 // Assume instances of frozen classes escape.
-                    }
                     functionSymbol
                 }
             }

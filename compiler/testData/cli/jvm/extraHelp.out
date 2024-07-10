@@ -203,6 +203,7 @@ where advanced options include:
   -Xnew-inference            Enable the new experimental generic type inference algorithm.
   -Xno-check-actual          Do not check for the presence of the 'actual' modifier in multiplatform projects.
   -Xno-inline                Disable method inlining.
+  -Xnon-local-break-continue Enable experimental non-local break and continue.
   -Xphases-to-dump           Dump the backend's state both before and after these phases.
   -Xphases-to-dump-after     Dump the backend's state after these phases.
   -Xphases-to-dump-before    Dump the backend's state before these phases.
@@ -238,7 +239,12 @@ where advanced options include:
   -Xverify-ir={none|warning|error}
                              IR verification mode (no verification by default).
   -Xverify-ir-visibility     Check for visibility violations in IR when validating it before running any lowerings. Only has effect if '-Xverify-ir' is not 'none'.
-  -Xwhen-guards              Enable language support for when guards.
+  -Xverify-ir-visibility-after-inlining
+                             Check for visibility violations in IR when validating it after the function inlining phase.
+                             Only has effect if '-Xverify-ir' is not 'none'.
+                             This flag is deprecated and will soon be removed in favor of '-Xverify-ir-visibility'.
+
+  -Xwhen-guards              Enable experimental language support for when guards.
 
 Advanced options are non-standard and may be changed or removed without any notice.
 OK

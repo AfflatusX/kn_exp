@@ -26,22 +26,23 @@ import org.jetbrains.kotlin.fir.lazy.Fir2IrLazySimpleFunction
 import org.jetbrains.kotlin.fir.resolve.calls.FirSimpleSyntheticPropertySymbol
 import org.jetbrains.kotlin.fir.resolve.getContainingClass
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
-import org.jetbrains.kotlin.fir.resolve.toFirRegularClass
-import org.jetbrains.kotlin.fir.resolve.toSymbol
+import org.jetbrains.kotlin.fir.resolve.toClassSymbol
+import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTag
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
-import org.jetbrains.kotlin.ir.IrImplementationDetail
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.UNDEFINED_PARAMETER_INDEX
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrSyntheticBodyKind
+import org.jetbrains.kotlin.ir.irFlag
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.symbols.impl.*
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.createParameterDeclarations
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.load.kotlin.FacadeClassSource
@@ -189,7 +190,7 @@ class Fir2IrDeclarationStorage(
                 return FakeOverrideIdentifier(
                     originalSymbol,
                     dispatchReceiverLookupTag,
-                    dispatchReceiverLookupTag.toFirRegularClass(c.session)?.isExpect == true
+                    dispatchReceiverLookupTag.toRegularClassSymbol(c.session)?.isExpect == true
                 )
             }
         }
@@ -198,6 +199,8 @@ class Fir2IrDeclarationStorage(
     private val delegatedReverseCache: ConcurrentHashMap<IrSymbol, FirDeclaration> = ConcurrentHashMap()
 
     private val fieldForDelegatedSupertypeCache: ConcurrentHashMap<FirField, IrFieldSymbol> = ConcurrentHashMap()
+    private val delegatedClassesMap: MutableMap<IrClassSymbol, MutableMap<IrClassSymbol, IrFieldSymbol>> = commonMemberStorage.delegatedClassesInfo
+    private val firClassesWithInheritanceByDelegation: MutableSet<FirClass> = commonMemberStorage.firClassesWithInheritanceByDelegation
 
     private val localStorage: Fir2IrLocalCallableStorage by threadLocal { Fir2IrLocalCallableStorage() }
 
@@ -260,24 +263,6 @@ class Fir2IrDeclarationStorage(
         return fileCache[firFile]!!
     }
 
-    @OptIn(IrImplementationDetail::class)
-    internal class NonCachedSourceFileFacadeClass(
-        origin: IrDeclarationOrigin,
-        name: Name,
-        source: SourceElement,
-    ) : IrClassImpl(
-        startOffset = UNDEFINED_OFFSET,
-        endOffset = UNDEFINED_OFFSET,
-        origin = origin,
-        symbol = IrClassSymbolImpl(),
-        name = name,
-        kind = ClassKind.CLASS,
-        visibility = DescriptorVisibilities.PUBLIC,
-        modality = Modality.FINAL,
-        source = source,
-        factory = IrFactoryImpl,
-    )
-
     private class NonCachedSourceFacadeContainerSource(
         override val className: JvmClassName,
         override val facadeClassName: JvmClassName?
@@ -308,7 +293,7 @@ class Fir2IrDeclarationStorage(
             return localStorage.getLocalFunctionSymbol(function)
         }
         runIf(function.origin.generatedAnyMethod) {
-            val containingClass = function.getContainingClass(session)!!
+            val containingClass = function.getContainingClass()!!
             val cache = dataClassGeneratedFunctionsCache.computeIfAbsent(containingClass) { DataClassGeneratedFunctionsStorage() }
             val cachedFunction = when (function.nameOrSpecialName) {
                 OperatorNameConventions.EQUALS -> cache.equalsSymbol
@@ -361,12 +346,12 @@ class Fir2IrDeclarationStorage(
         if (
             parentIsExternal ||
             function !is FirSimpleFunction ||
-            !function.isFakeOverride(fakeOverrideOwnerLookupTag)
+            !function.isFakeOverrideOrDelegated(fakeOverrideOwnerLookupTag)
         ) {
             return createFunctionSymbol()
         }
         val containingClassSymbol = findContainingIrClassSymbol(function, fakeOverrideOwnerLookupTag)
-        val originalFirFunction = function.unwrapFakeOverrides()
+        val originalFirFunction = function.unwrapFakeOverridesOrDelegated()
         val originalSymbol = getIrFunctionSymbol(originalFirFunction.symbol) as IrSimpleFunctionSymbol
         return IrFunctionFakeOverrideSymbol(originalSymbol, containingClassSymbol, idSignature = null)
     }
@@ -378,6 +363,7 @@ class Fir2IrDeclarationStorage(
         val containingClassLookupTag = when {
             fakeOverrideOwnerLookupTag != null -> fakeOverrideOwnerLookupTag
             callable.isSubstitutionOrIntersectionOverride -> callable.containingClassLookupTag()
+            callable.isDelegated -> callable.containingClassLookupTag()
             else -> shouldNotBeCalled()
         }
         requireNotNull(containingClassLookupTag) { "Containing class not found for ${callable.render()}" }
@@ -428,14 +414,8 @@ class Fir2IrDeclarationStorage(
         return this
     }
 
-    internal fun cacheDelegationFunction(function: FirSimpleFunction, irFunction: IrSimpleFunction) {
-        val symbol = irFunction.symbol
-        functionCache[function] = symbol
-        delegatedReverseCache[symbol] = function
-    }
-
     internal fun cacheGeneratedFunction(firFunction: FirSimpleFunction, irFunction: IrSimpleFunction) {
-        val containingClass = firFunction.getContainingClass(session)!!
+        val containingClass = firFunction.getContainingClass()!!
         val cache = dataClassGeneratedFunctionsCache.computeIfAbsent(containingClass) { DataClassGeneratedFunctionsStorage() }
         val irSymbol = irFunction.symbol
         when (val name = firFunction.nameOrSpecialName) {
@@ -559,7 +539,7 @@ class Fir2IrDeclarationStorage(
     ): PropertySymbols {
         if (
             !parentIsExternal &&
-            property.isFakeOverride(fakeOverrideOwnerLookupTag)
+            property.isFakeOverrideOrDelegated(fakeOverrideOwnerLookupTag)
         ) {
             return createFakeOverridePropertySymbols(property, fakeOverrideOwnerLookupTag)
         }
@@ -580,7 +560,7 @@ class Fir2IrDeclarationStorage(
         property: FirProperty,
         fakeOverrideOwnerLookupTag: ConeClassLikeLookupTag?,
     ): PropertySymbols {
-        val originalFirProperty = property.unwrapFakeOverrides()
+        val originalFirProperty = property.unwrapFakeOverridesOrDelegated()
         val originalSymbols = getIrPropertySymbols(originalFirProperty.symbol)
         require(property.isStubPropertyForPureField != true) {
             "What are we doing here?"
@@ -594,7 +574,7 @@ class Fir2IrDeclarationStorage(
 
         val setterSymbol = runIf(property.isVar) {
             val setterIsVisible = property.setter?.let { setter ->
-                (fakeOverrideOwnerLookupTag?.toSymbol(session) as? FirClassSymbol<*>)?.fir?.let { containingClass ->
+                fakeOverrideOwnerLookupTag?.toClassSymbol(session)?.fir?.let { containingClass ->
                     setter.isVisibleInClass(containingClass)
                 }
             } ?: true
@@ -723,12 +703,6 @@ class Fir2IrDeclarationStorage(
 
     fun findBackingFieldOfProperty(propertySymbol: IrPropertySymbol): IrFieldSymbol? {
         return backingFieldForPropertyCache[propertySymbol]
-    }
-
-    internal fun cacheDelegatedProperty(property: FirProperty, irProperty: IrProperty) {
-        val symbol = irProperty.symbol
-        propertyCache[property] = symbol
-        delegatedReverseCache[symbol] = property
     }
 
     // ------------------------------------ fields ------------------------------------
@@ -942,6 +916,14 @@ class Fir2IrDeclarationStorage(
         fieldForDelegatedSupertypeCache[field] = irFieldSymbol
     }
 
+    fun recordSupertypeDelegationInformation(containingFirClass: FirClass, irClass: IrClass, superType: IrType, irFieldSymbol: IrFieldSymbol) {
+        val delegateMapForClass = delegatedClassesMap.getOrPut(irClass.symbol) { mutableMapOf() }
+        val delegatedSuperClass = superType.classOrNull ?: error("No symbol for type $superType")
+        require(delegatedSuperClass !in delegateMapForClass) { "Delegate info for supertype $superType already stored" }
+        delegateMapForClass[delegatedSuperClass] = irFieldSymbol
+        firClassesWithInheritanceByDelegation += containingFirClass
+    }
+
     internal fun createSupertypeDelegateIrField(field: FirField, irClass: IrClass): IrField {
         val symbol = createFieldSymbol()
 
@@ -1070,7 +1052,7 @@ class Fir2IrDeclarationStorage(
     }
 
     private fun FirCallableDeclaration.computeExternalOrigin(): IrDeclarationOrigin {
-        val containingClass = containingClassLookupTag()?.toFirRegularClass(session)
+        val containingClass = containingClassLookupTag()?.toRegularClassSymbol(session)
         return when (containingClass?.isJavaOrEnhancement) {
             true -> IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
             else -> IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
@@ -1211,7 +1193,7 @@ class Fir2IrDeclarationStorage(
     private fun generateDeclaration(originalSymbol: FirBasedSymbol<*>) {
         val irParent = findIrParent(
             originalSymbol.packageFqName(),
-            originalSymbol.getContainingClassSymbol(session)?.toLookupTag(),
+            originalSymbol.getContainingClassSymbol()?.toLookupTag(),
             originalSymbol,
             originalSymbol.origin
         )
@@ -1352,9 +1334,20 @@ class Fir2IrDeclarationStorage(
 
                     val facadeShortName = className.fqNameForClassNameWithoutDollars.shortName()
                     val containerSource = NonCachedSourceFacadeContainerSource(className, facadeClassName)
-                    return NonCachedSourceFileFacadeClass(declarationOrigin, facadeShortName, containerSource).apply {
+                    return IrFactoryImpl.createClass(
+                        startOffset = UNDEFINED_OFFSET,
+                        endOffset = UNDEFINED_OFFSET,
+                        origin = declarationOrigin,
+                        symbol = IrClassSymbolImpl(),
+                        name = facadeShortName,
+                        kind = ClassKind.CLASS,
+                        visibility = DescriptorVisibilities.PUBLIC,
+                        modality = Modality.FINAL,
+                        source = containerSource
+                    ).apply {
                         parent = parentPackage
                         createParameterDeclarations()
+                        this.isNonCachedSourceFileFacade = true
                     }
                 }
             }
@@ -1409,6 +1402,8 @@ private fun FirCallableDeclaration.isFakeOverrideImpl(fakeOverrideOwnerLookupTag
 private object IsStubPropertyForPureFieldKey : FirDeclarationDataKey()
 
 internal var FirProperty.isStubPropertyForPureField: Boolean? by FirDeclarationDataRegistry.data(IsStubPropertyForPureFieldKey)
+
+internal var IrClass.isNonCachedSourceFileFacade: Boolean by irFlag(followAttributeOwner = false)
 
 /**
  * Opt-in to this annotation indicates that some code uses annotated function but it actually shouldn't
