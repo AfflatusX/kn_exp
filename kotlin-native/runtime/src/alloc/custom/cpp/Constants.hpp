@@ -5,4 +5,4 @@
 
 #pragma once
 
-inline constexpr const size_t KiB = 1024;
+inline constexpr const std::size_t KiB = 1024;

@@ -46,6 +46,13 @@ void throwReadingRandomBytesFailed(const char* format, ...) {
 
 extern "C" {
 
+#ifdef KONAN_ZEPHYR
+
+// see https://docs.zephyrproject.org/latest/services/crypto/random/index.html#c.sys_rand_get
+extern void sys_rand_get(void* dst, std::size_t len);
+
+#endif
+
 // Mostly taken from kotlin-native/runtime/src/mimalloc/c/random.c
 void Kotlin_Uuid_getRandomBytes(KRef byteArray, KInt size) {
     kotlin::ThreadStateGuard guard(kotlin::ThreadState::kNative);
@@ -69,6 +76,8 @@ void Kotlin_Uuid_getRandomBytes(KRef byteArray, KInt size) {
     if (!NT_SUCCESS(status)) {
         throwReadingRandomBytesFailed("Unexpected failure in random bytes generation: %ld", status);
     }
+#elif KONAN_ZEPHYR
+    sys_rand_get((void*)address, size);
 #else
 #error "How to Kotlin_Uuid_getRandomBytes()?"
 #endif

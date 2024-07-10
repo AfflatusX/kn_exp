@@ -23,7 +23,10 @@ import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.konan.TempFiles
 import org.jetbrains.kotlin.konan.file.File
-import org.jetbrains.kotlin.konan.target.*
+import org.jetbrains.kotlin.konan.target.CompilerOutputKind
+import org.jetbrains.kotlin.konan.target.Family
+import org.jetbrains.kotlin.konan.target.LinkerOutputKind
+import org.jetbrains.kotlin.konan.target.ZephyrConfigurables
 import org.jetbrains.kotlin.library.impl.javaFile
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -324,14 +327,15 @@ internal fun <C : PhaseContext> PhaseEngine<C>.compileAndLink(
     )
 
     val configurables = context.config.platform.configurables;
-    if (configurables is ZephyrConfigurables || configurables.target == KonanTarget.LINUX_X64) {
+    if (configurables is ZephyrConfigurables) {
         println("skipping linker phase since zephyr platform will link through west.");
         println("original input files: ${listOf(linkerInput.canonicalPath)}")
         val linker = Linker(
                 config = context.config,
                 // linker only supports executable?
                 linkerOutput = LinkerOutputKind.EXECUTABLE,
-                outputFiles = linkerPhaseInput.outputFiles
+                outputFiles = linkerPhaseInput.outputFiles,
+                tempFiles = temporaryFiles,
         )
         val commands = linker.linkCommands(
                 linkerPhaseInput.outputFile,
