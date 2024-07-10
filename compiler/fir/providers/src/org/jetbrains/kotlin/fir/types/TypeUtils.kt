@@ -20,10 +20,10 @@ import org.jetbrains.kotlin.fir.diagnostics.ConeRecursiveTypeParameterDuringEras
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.substitution.substitute
 import org.jetbrains.kotlin.fir.resolve.substitution.substitutorByMap
-import org.jetbrains.kotlin.fir.resolve.toSymbol
+import org.jetbrains.kotlin.fir.resolve.toClassSymbol
 import org.jetbrains.kotlin.fir.resolvedTypeFromPrototype
 import org.jetbrains.kotlin.fir.symbols.ConeTypeParameterLookupTag
-import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
 import org.jetbrains.kotlin.fir.symbols.lazyResolveToPhase
 import org.jetbrains.kotlin.fir.types.builder.buildErrorTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
 import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
 import org.jetbrains.kotlin.fir.types.lowerBoundIfFlexible
 import org.jetbrains.kotlin.fir.utils.exceptions.withConeTypeEntry
+import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.resolve.calls.NewCommonSuperTypeCalculator
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
@@ -188,9 +189,9 @@ fun <T : ConeKotlinType> T.withAttributes(attributes: ConeAttributes): T {
 /**
  * Adds or replaces an `AbbreviatedTypeAttribute`.
  */
-fun ConeKotlinType.withAbbreviation(attribute: AbbreviatedTypeAttribute): ConeKotlinType {
+fun <T : ConeKotlinType> T.withAbbreviation(attribute: AbbreviatedTypeAttribute): T {
     val clearedAttributes = attributes.abbreviatedType?.let(attributes::remove) ?: attributes
-    return withAttributes(clearedAttributes + attribute)
+    return withAttributes(clearedAttributes.add(attribute))
 }
 
 fun <T : ConeKotlinType> T.withNullability(
@@ -284,14 +285,6 @@ fun ConeKotlinType.isExtensionFunctionType(session: FirSession): Boolean {
 
 fun FirTypeRef.isExtensionFunctionType(session: FirSession): Boolean {
     return coneTypeSafe<ConeKotlinType>()?.isExtensionFunctionType(session) == true
-}
-
-fun ConeKotlinType.toSymbol(session: FirSession): FirClassifierSymbol<*>? {
-    return (this as? ConeLookupTagBasedType)?.lookupTag?.toSymbol(session)
-}
-
-fun ConeClassLikeType.toSymbol(session: FirSession): FirClassLikeSymbol<*>? {
-    return lookupTag.toSymbol(session)
 }
 
 fun FirTypeRef.hasEnhancedNullability(): Boolean =
@@ -589,11 +582,11 @@ fun ConeKotlinType.canHaveSubtypesAccordingToK1(session: FirSession): Boolean =
  * The original K1 function: [org.jetbrains.kotlin.types.TypeUtils.canHaveSubtypes].
  */
 private fun ConeKotlinType.hasSubtypesAboveNothingAccordingToK1(session: FirSession): Boolean {
-    if (this.isMarkedNullable) {
+    val expandedType = fullyExpandedType(session)
+    if (expandedType.isMarkedNullable) {
         return true
     }
-    val expandedType = fullyExpandedType(session)
-    val classSymbol = expandedType.toSymbol(session) as? FirClassSymbol ?: return true
+    val classSymbol = expandedType.toClassSymbol(session) ?: return true
     // In K2 enum classes are final, though enum entries are their subclasses (which is a compiler implementation detail).
     if (classSymbol.isEnumClass || classSymbol.isExpect || classSymbol.modality != Modality.FINAL) {
         return true
@@ -625,26 +618,6 @@ private fun ConeKotlinType.hasSubtypesAboveNothingAccordingToK1(session: FirSess
     }
 
     return false
-}
-
-/**
- * Returns the FirRegularClassSymbol associated with this
- * or null of something goes wrong.
- */
-fun ConeClassLikeType.toRegularClassSymbol(session: FirSession): FirRegularClassSymbol? {
-    return fullyExpandedType(session).toSymbol(session) as? FirRegularClassSymbol
-}
-
-fun ConeKotlinType.toRegularClassSymbol(session: FirSession): FirRegularClassSymbol? {
-    return (this as? ConeClassLikeType)?.toRegularClassSymbol(session)
-}
-
-fun ConeKotlinType.toClassSymbol(session: FirSession): FirClassSymbol<*>? {
-    return (this as? ConeClassLikeType)?.toClassSymbol(session)
-}
-
-fun ConeClassLikeType.toClassSymbol(session: FirSession): FirClassSymbol<*>? {
-    return fullyExpandedType(session).toSymbol(session) as? FirClassSymbol<*>
 }
 
 /**
@@ -847,3 +820,15 @@ fun FirIntersectionTypeRef.isLeftValidForDefinitelyNotNullable(session: FirSessi
     leftType.coneType.let { it is ConeTypeParameterType && it.canBeNull(session) && !it.isMarkedNullable }
 
 val FirIntersectionTypeRef.isRightValidForDefinitelyNotNullable: Boolean get() = rightType.coneType.isAny
+
+fun ConeKotlinType.isKCallableType(): Boolean {
+    return this.classId == StandardClassIds.KCallable
+}
+
+val ConeKotlinType.isUnitOrFlexibleUnit: Boolean
+    get() {
+        val type = this.lowerBoundIfFlexible()
+        if (type.isNullable) return false
+        val classId = type.classId ?: return false
+        return classId == StandardClassIds.Unit
+    }

@@ -34,9 +34,9 @@ private val validateIrBeforeLowering = makeIrModulePhase<JsIrBackendContext>(
 )
 
 private val validateIrAfterInliningPhase = makeIrModulePhase(
-    ::IrValidationAfterInliningPhase,
-    name = "IrValidationAfterInliningPhase",
-    description = "Validate IR after inlining",
+    ::IrValidationAfterInliningAllFunctionsPhase,
+    name = "IrValidationAfterInliningAllFunctionsPhase",
+    description = "Validate IR after all functions have been inlined",
 )
 
 private val validateIrAfterLowering = makeIrModulePhase<JsIrBackendContext>(
@@ -141,17 +141,10 @@ private val jsCodeOutliningPhase = makeIrModulePhase(
     description = "Outline js() calls where JS code references Kotlin locals"
 )
 
-private val arrayConstructorReferencePhase = makeIrModulePhase(
-    ::ArrayConstructorReferenceLowering,
-    name = "ArrayConstructorReference",
-    description = "Transform `::Array` into a lambda"
-)
-
 private val arrayConstructorPhase = makeIrModulePhase(
     ::ArrayConstructorLowering,
     name = "ArrayConstructor",
     description = "Transform `Array(size) { index -> value }` into a loop",
-    prerequisite = setOf(arrayConstructorReferencePhase)
 )
 
 private val sharedVariablesLoweringPhase = makeIrModulePhase(
@@ -212,13 +205,7 @@ private val saveInlineFunctionsBeforeInlining = makeIrModulePhase(
 )
 
 private val functionInliningPhase = makeIrModulePhase(
-    {
-        FunctionInlining(
-            it,
-            JsInlineFunctionResolver(it),
-            it.innerClassesSupport,
-        )
-    },
+    { FunctionInlining(it, JsInlineFunctionResolver(it)) },
     name = "FunctionInliningPhase",
     description = "Perform function inlining",
     prerequisite = setOf(saveInlineFunctionsBeforeInlining)
@@ -583,19 +570,6 @@ private val multipleCatchesLoweringPhase = makeIrModulePhase(
     description = "Replace multiple catches with single one"
 )
 
-private val errorExpressionLoweringPhase = makeIrModulePhase(
-    ::JsErrorExpressionLowering,
-    name = "errorExpressionLoweringPhase",
-    description = "Transform error expressions into simple ir code",
-    prerequisite = setOf(multipleCatchesLoweringPhase)
-)
-
-private val errorDeclarationLoweringPhase = makeIrModulePhase(
-    ::JsErrorDeclarationLowering,
-    name = "errorDeclarationLoweringPhase",
-    description = "Transform error declarations into simple ir code"
-)
-
 private val bridgesConstructionPhase = makeIrModulePhase(
     ::JsBridgesConstruction,
     name = "BridgesConstruction",
@@ -616,7 +590,7 @@ private val typeOperatorLoweringPhase = makeIrModulePhase(
     prerequisite = setOf(
         bridgesConstructionPhase,
         removeInlineDeclarationsWithReifiedTypeParametersLoweringPhase,
-        singleAbstractMethodPhase, errorExpressionLoweringPhase,
+        singleAbstractMethodPhase,
         interopCallableReferenceLoweringPhase,
     )
 )
@@ -785,11 +759,15 @@ val mainFunctionCallWrapperLowering = makeIrModulePhase<JsIrBackendContext>(
     description = "Generate main function call inside the wrapper-function"
 )
 
+val inlineCallableReferenceToLambdaPhase = makeIrModulePhase<JsIrBackendContext>(
+    ::JsInlineCallableReferenceToLambdaPhase,
+    name = "JsInlineCallableReferenceToLambdaPhase",
+    description = "Transform all callable reference (including defaults) to inline lambdas, mark inline lambdas for later passes"
+)
+
 val loweringList = listOf<SimpleNamedCompilerPhase<JsIrBackendContext, IrModuleFragment, IrModuleFragment>>(
     validateIrBeforeLowering,
     jsCodeOutliningPhase,
-    arrayConstructorReferencePhase,
-    arrayConstructorPhase,
     lateinitNullableFieldsPhase,
     lateinitDeclarationLoweringPhase,
     lateinitUsageLoweringPhase,
@@ -797,6 +775,8 @@ val loweringList = listOf<SimpleNamedCompilerPhase<JsIrBackendContext, IrModuleF
     localClassesInInlineLambdasPhase,
     localClassesInInlineFunctionsPhase,
     localClassesExtractionFromInlineFunctionsPhase,
+    inlineCallableReferenceToLambdaPhase,
+    arrayConstructorPhase,
     syntheticAccessorLoweringPhase,
     wrapInlineDeclarationsWithReifiedTypeParametersLowering,
     saveInlineFunctionsBeforeInlining,
@@ -872,8 +852,6 @@ val loweringList = listOf<SimpleNamedCompilerPhase<JsIrBackendContext, IrModuleF
     throwableSuccessorsLoweringPhase,
     varargLoweringPhase,
     multipleCatchesLoweringPhase,
-    errorExpressionLoweringPhase,
-    errorDeclarationLoweringPhase,
     bridgesConstructionPhase,
     typeOperatorLoweringPhase,
     secondaryConstructorLoweringPhase,

@@ -1,10 +1,14 @@
 KaJavaFieldSymbol:
   annotations: []
   callableId: /JavaClass.field2
+  compilerVisibility: Public
   contextReceivers: []
+  isActual: false
+  isExpect: false
   isExtension: false
   isStatic: false
   isVal: false
+  location: CLASS
   modality: OPEN
   name: field2
   origin: JAVA_SOURCE
@@ -12,25 +16,27 @@ KaJavaFieldSymbol:
   returnType: KaFlexibleType:
     annotations: []
     type: kotlin/String!
-  symbolKind: CLASS_MEMBER
-  typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: JavaClass
   getContainingFileSymbol: null
   getContainingJvmClassName: JavaClass
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
 KaJavaFieldSymbol:
   annotations: []
   callableId: /JavaClass.field
+  compilerVisibility: Public
   contextReceivers: []
+  isActual: false
+  isExpect: false
   isExtension: false
   isStatic: false
   isVal: false
+  location: CLASS
   modality: OPEN
   name: field
   origin: JAVA_SOURCE
@@ -39,21 +45,20 @@ KaJavaFieldSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Int
-  symbolKind: CLASS_MEMBER
-  typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: JavaClass
   getContainingFileSymbol: null
   getContainingJvmClassName: JavaClass
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: /JavaClass.foo
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: false
@@ -69,6 +74,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: OPEN
   name: foo
   origin: JAVA_SOURCE
@@ -76,22 +82,22 @@ KaFunctionSymbol:
   returnType: KaFlexibleType:
     annotations: []
     type: kotlin/String!
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: JavaClass
   getContainingFileSymbol: null
   getContainingJvmClassName: JavaClass
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
 KaConstructorSymbol:
   annotations: []
   callableId: null
+  compilerVisibility: Public
   containingClassId: JavaClass
   contextReceivers: []
   hasStableParameterNames: false
@@ -99,17 +105,18 @@ KaConstructorSymbol:
   isExpect: false
   isExtension: false
   isPrimary: true
+  location: CLASS
+  modality: FINAL
   origin: JAVA_SOURCE
   receiverParameter: null
   returnType: KaUsualClassType:
     annotations: []
     typeArguments: []
     type: JavaClass
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: null
   getContainingJvmClassName: JavaClass
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

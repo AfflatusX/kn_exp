@@ -454,6 +454,19 @@ They should be a subset of sources passed as free arguments."""
         }
 
     @Argument(
+        value = "-Xverify-ir-visibility-after-inlining",
+        description = """Check for visibility violations in IR when validating it after the function inlining phase.
+Only has effect if '-Xverify-ir' is not 'none'.
+This flag is deprecated and will soon be removed in favor of '-Xverify-ir-visibility'.
+""",
+    )
+    var verifyIrVisibilityAfterInlining: Boolean = false
+        set(value) {
+            checkFrozen()
+            field = value
+        }
+
+    @Argument(
         value = "-Xprofile-phases",
         description = "Profile backend phases."
     )
@@ -684,6 +697,16 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
         }
 
     @Argument(
+        value = "-Xnon-local-break-continue",
+        description = "Enable experimental non-local break and continue."
+    )
+    var nonLocalBreakContinue = false
+        set(value) {
+            checkFrozen()
+            field = value
+        }
+
+    @Argument(
         value = "-Xmulti-dollar-interpolation",
         description = "Enable experimental multi-dollar interpolation."
     )
@@ -772,7 +795,7 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
 
     @Argument(
         value = "-Xwhen-guards",
-        description = "Enable language support for when guards."
+        description = "Enable experimental language support for when guards."
     )
     var whenGuards = false
         set(value) {
@@ -807,7 +830,6 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
             put(AnalysisFlags.allowKotlinPackage, allowKotlinPackage)
             put(AnalysisFlags.stdlibCompilation, stdlibCompilation)
             put(AnalysisFlags.muteExpectActualClassesWarning, expectActualClasses)
-            put(AnalysisFlags.consistentDataClassCopyVisibility, consistentDataClassCopyVisibility)
             put(AnalysisFlags.allowFullyQualifiedNameInKClass, true)
             put(AnalysisFlags.dontWarnOnErrorSuppression, dontWarnOnErrorSuppression)
         }
@@ -817,6 +839,10 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
         HashMap<LanguageFeature, LanguageFeature.State>().apply {
             if (multiPlatform) {
                 put(LanguageFeature.MultiPlatformProjects, LanguageFeature.State.ENABLED)
+            }
+
+            if (consistentDataClassCopyVisibility) {
+                put(LanguageFeature.DataClassCopyRespectsConstructorVisibility, LanguageFeature.State.ENABLED)
             }
 
             if (unrestrictedBuilderInference) {
@@ -840,6 +866,10 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
 
             if (contextReceivers) {
                 put(LanguageFeature.ContextReceivers, LanguageFeature.State.ENABLED)
+            }
+
+            if (nonLocalBreakContinue) {
+                put(LanguageFeature.BreakContinueInInlineLambdas, LanguageFeature.State.ENABLED)
             }
 
             if (inlineClasses) {

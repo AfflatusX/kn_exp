@@ -1,9 +1,14 @@
 KaSamConstructorSymbol:
   annotations: []
   callableId: /MyInterface
+  compilerVisibility: Public
   contextReceivers: []
   hasStableParameterNames: true
+  isActual: false
+  isExpect: false
   isExtension: false
+  location: TOP_LEVEL
+  modality: FINAL
   name: MyInterface
   origin: SAM_CONSTRUCTOR
   receiverParameter: null
@@ -11,24 +16,29 @@ KaSamConstructorSymbol:
     annotations: []
     typeArguments: []
     type: MyInterface
-  symbolKind: SAM_CONSTRUCTOR
   typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Local
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: function
       origin: SOURCE
       receiverParameter: null
-      returnType: KaFunctionalType:
+      returnType: KaFunctionType:
         annotations: []
         typeArguments: [
           KaUsualClassType:
@@ -37,14 +47,14 @@ KaSamConstructorSymbol:
             type: kotlin/Unit
         ]
         type: kotlin/Function0<kotlin/Unit>
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: LOCAL
       getContainingFileSymbol: KaFileSymbol(samConstructorForTypeAlias.kt)
-      getContainingJvmClassName: null
-      getContainingModule: KtSourceModule "Sources of main"
+      getContainingJvmClassName: SamConstructorForTypeAliasKt
+      getContainingModule: KaSourceModule "Sources of main"
       deprecationStatus: null
   ]
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(samConstructorForTypeAlias.kt)
-  getContainingJvmClassName: null
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingJvmClassName: SamConstructorForTypeAliasKt
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

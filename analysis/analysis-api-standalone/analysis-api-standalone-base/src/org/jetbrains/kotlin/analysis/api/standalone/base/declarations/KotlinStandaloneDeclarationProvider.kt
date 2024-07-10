@@ -20,12 +20,12 @@ import com.intellij.util.indexing.FileContent
 import com.intellij.util.indexing.FileContentImpl
 import org.jetbrains.kotlin.analysis.decompiler.konan.K2KotlinNativeMetadataDecompiler
 import org.jetbrains.kotlin.analysis.decompiler.konan.KlibMetaFileType
-import org.jetbrains.kotlin.analysis.decompiler.psi.BuiltInsVirtualFileProvider
+import org.jetbrains.kotlin.analysis.decompiler.psi.BuiltinsVirtualFileProvider
 import org.jetbrains.kotlin.analysis.decompiler.psi.KotlinBuiltInDecompiler
 import org.jetbrains.kotlin.analysis.decompiler.psi.KotlinBuiltInFileType
 import org.jetbrains.kotlin.analysis.decompiler.stub.file.ClsKotlinBinaryClassCache
 import org.jetbrains.kotlin.analysis.decompiler.stub.file.KotlinClsStubBuilder
-import org.jetbrains.kotlin.analysis.project.structure.KtModule
+import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
 import org.jetbrains.kotlin.analysis.api.platform.declarations.KotlinDeclarationProvider
 import org.jetbrains.kotlin.analysis.api.platform.declarations.KotlinDeclarationProviderFactory
 import org.jetbrains.kotlin.analysis.api.platform.declarations.KotlinDeclarationProviderMerger
@@ -49,7 +49,7 @@ import java.util.concurrent.ConcurrentHashMap
 class KotlinStandaloneDeclarationProvider internal constructor(
     private val index: KotlinStandaloneDeclarationIndex,
     val scope: GlobalSearchScope,
-) : KotlinDeclarationProvider() {
+) : KotlinDeclarationProvider {
 
     private val KtElement.inScope: Boolean
         get() = containingKtFile.virtualFile in scope
@@ -158,7 +158,7 @@ class KotlinStandaloneDeclarationProviderFactory(
     sharedBinaryRoots: List<VirtualFile> = emptyList(),
     skipBuiltins: Boolean = false,
     shouldBuildStubsForBinaryLibraries: Boolean = false,
-) : KotlinDeclarationProviderFactory() {
+) : KotlinDeclarationProviderFactory {
 
     private val index = KotlinStandaloneDeclarationIndex()
 
@@ -167,7 +167,7 @@ class KotlinStandaloneDeclarationProviderFactory(
     private val createdFakeKtFiles = mutableListOf<KtFile>()
 
     private fun loadBuiltIns(): Collection<KotlinFileStubImpl> {
-        return BuiltInsVirtualFileProvider.getInstance().getBuiltInVirtualFiles().mapNotNull { virtualFile ->
+        return BuiltinsVirtualFileProvider.getInstance().getBuiltinVirtualFiles().mapNotNull { virtualFile ->
             val fileContent = FileContentImpl.createByFile(virtualFile, project)
             createKtFileStub(psiManager, builtInDecompiler, fileContent)
         }
@@ -448,7 +448,7 @@ class KotlinStandaloneDeclarationProviderFactory(
         }
     }
 
-    override fun createDeclarationProvider(scope: GlobalSearchScope, contextualModule: KtModule?): KotlinDeclarationProvider {
+    override fun createDeclarationProvider(scope: GlobalSearchScope, contextualModule: KaModule?): KotlinDeclarationProvider {
         return KotlinStandaloneDeclarationProvider(index, scope)
     }
 
@@ -486,7 +486,7 @@ class KotlinFakeClsStubsCache {
     }
 }
 
-class KotlinStandaloneDeclarationProviderMerger(private val project: Project) : KotlinDeclarationProviderMerger() {
+class KotlinStandaloneDeclarationProviderMerger(private val project: Project) : KotlinDeclarationProviderMerger {
     override fun merge(providers: List<KotlinDeclarationProvider>): KotlinDeclarationProvider =
         providers.mergeSpecificProviders<_, KotlinStandaloneDeclarationProvider>(KotlinCompositeDeclarationProvider.factory) { targetProviders ->
             val combinedScope = GlobalSearchScope.union(targetProviders.map { it.scope })

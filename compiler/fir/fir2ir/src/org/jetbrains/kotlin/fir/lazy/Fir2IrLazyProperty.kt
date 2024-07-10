@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.fir.declarations.impl.FirDefaultPropertySetter
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.expressions.FirExpression
-import org.jetbrains.kotlin.fir.resolve.toFirRegularClass
+import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.lazyResolveToPhase
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.resolvedType
@@ -113,8 +113,11 @@ class Fir2IrLazyProperty(
                 var irInitializer: IrExpressionBody? = null
                 declarationStorage.withScope(symbol) {
                     with(declarationStorage) {
-                        val firPrimaryConstructor =
-                            fir.containingClassLookupTag()?.toFirRegularClass(session)?.primaryConstructorIfAny(session) ?: return@with
+                        val firPrimaryConstructor = fir.containingClassLookupTag()
+                            ?.toRegularClassSymbol(session)
+                            ?.fir
+                            ?.primaryConstructorIfAny(session)
+                            ?: return@with
 
                         @OptIn(UnsafeDuringIrConstructionAPI::class)
                         declarationStorage.getIrConstructorSymbol(firPrimaryConstructor).owner.putParametersInScope(firPrimaryConstructor.fir)
@@ -156,6 +159,7 @@ class Fir2IrLazyProperty(
             }
         }
         fir.delegate != null -> {
+            fir.lazyResolveToPhase(FirResolvePhase.BODY_RESOLVE)
             callablesGenerator.createBackingField(
                 this@Fir2IrLazyProperty,
                 fir,

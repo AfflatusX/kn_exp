@@ -5,26 +5,20 @@
 
 #include "CustomAllocator.hpp"
 
-#include <atomic>
 #include <cstdint>
-#include <cstdlib>
 #include <cinttypes>
 #include <cstring>
 #include <new>
 
-#include "CustomAllocConstants.hpp"
 #include "CustomLogging.hpp"
 #include "ExtraObjectData.hpp"
 #include "ExtraObjectPage.hpp"
-#include "GC.hpp"
-#include "GCScheduler.hpp"
 #include "KAssert.h"
 #include "SingleObjectPage.hpp"
 #include "NextFitPage.hpp"
 #include "Memory.h"
 #include "FixedBlockPage.hpp"
 #include "GCApi.hpp"
-#include "TypeInfo.h"
 
 namespace kotlin::alloc {
 
@@ -40,7 +34,8 @@ CustomAllocator::~CustomAllocator() {
 ObjHeader* CustomAllocator::CreateObject(const TypeInfo* typeInfo) noexcept {
     RuntimeAssert(!typeInfo->IsArray(), "Must not be an array");
     auto descriptor = HeapObject::make_descriptor(typeInfo);
-    auto& heapObject = *descriptor.construct(Allocate(descriptor.size()));
+    auto size = AllocationSize::bytesAtLeast(descriptor.size());
+    auto& heapObject = *descriptor.construct(Allocate(size));
     ObjHeader* object = heapObject.header(descriptor).object();
     if (typeInfo->flags_ & TF_HAS_FINALIZER) {
         auto* extraObject = CreateExtraObject();
@@ -57,7 +52,8 @@ ArrayHeader* CustomAllocator::CreateArray(const TypeInfo* typeInfo, uint32_t cou
     CustomAllocDebug("CustomAllocator@%p::CreateArray(%d)", this ,count);
     RuntimeAssert(typeInfo->IsArray(), "Must be an array");
     auto descriptor = HeapArray::make_descriptor(typeInfo, count);
-    auto& heapArray = *descriptor.construct(Allocate(descriptor.size()));
+    auto size = AllocationSize::bytesAtLeast(descriptor.size());
+    auto& heapArray = *descriptor.construct(Allocate(size));
     ArrayHeader* array = heapArray.header(descriptor).array();
     array->typeInfoOrMeta_ = const_cast<TypeInfo*>(typeInfo);
     array->count_ = count;
@@ -114,13 +110,13 @@ size_t CustomAllocator::GetAllocatedHeapSize(ObjHeader* object) noexcept {
     }
 }
 
-uint8_t* CustomAllocator::Allocate(uint64_t size) noexcept {
-    RuntimeAssert(size, "CustomAllocator::Allocate cannot allocate 0 bytes");
-    CustomAllocDebug("CustomAllocator::Allocate(%" PRIu64 ")", size);
-    uint64_t cellCount = (size + sizeof(Cell) - 1) / sizeof(Cell);
-    if (cellCount <= FIXED_BLOCK_PAGE_MAX_BLOCK_SIZE) {
+uint8_t* CustomAllocator::Allocate(AllocationSize size) noexcept {
+    RuntimeAssert(size > AllocationSize::cells(0), "CustomAllocator::Allocate cannot allocate 0 bytes");
+    CustomAllocDebug("CustomAllocator::Allocate(%" PRIu64 ")", size.inBytes());
+    uint64_t cellCount = size.inCells();
+    if (cellCount <= FixedBlockPage::MAX_BLOCK_SIZE) {
         return AllocateInFixedBlockPage(cellCount);
-    } else if (cellCount > NEXT_FIT_PAGE_MAX_BLOCK_SIZE) {
+    } else if (cellCount > NextFitPage::maxBlockSize()) {
         return AllocateInSingleObjectPage(cellCount);
     } else {
         return AllocateInNextFitPage(cellCount);

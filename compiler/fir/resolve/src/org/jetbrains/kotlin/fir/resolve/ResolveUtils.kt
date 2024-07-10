@@ -21,10 +21,13 @@ import org.jetbrains.kotlin.fir.expressions.impl.FirUnitExpression
 import org.jetbrains.kotlin.fir.references.*
 import org.jetbrains.kotlin.fir.references.builder.buildErrorNamedReference
 import org.jetbrains.kotlin.fir.references.builder.buildResolvedErrorReference
-import org.jetbrains.kotlin.fir.resolve.calls.*
+import org.jetbrains.kotlin.fir.resolve.calls.TypeParameterAsExpression
+import org.jetbrains.kotlin.fir.resolve.calls.candidate.Candidate
+import org.jetbrains.kotlin.fir.resolve.calls.candidate.FirNamedReferenceWithCandidate
+import org.jetbrains.kotlin.fir.resolve.calls.candidate.FirPropertyWithExplicitBackingFieldResolvedNamedReference
+import org.jetbrains.kotlin.fir.resolve.calls.isVisible
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.FirAnonymousFunctionReturnExpressionInfo
 import org.jetbrains.kotlin.fir.resolve.diagnostics.*
-import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.resultType
 import org.jetbrains.kotlin.fir.scopes.FirTypeScope
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
@@ -43,7 +46,6 @@ import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.resolve.ForbiddenNamedArgumentsTarget
 import org.jetbrains.kotlin.resolve.calls.tower.CandidateApplicability
@@ -134,6 +136,13 @@ internal fun FirAnonymousFunction.computeReturnType(
     // TODO: Consider simplifying the code once we've got some resolution on KT-67869
     val commonSuperType = session.typeContext.commonSuperTypeOrNull(returnExpressions.map { it.expression.resolvedType })
         ?: unitType
+
+    // If both expected and return expression CSTs are error types, prefer the return expression CST.
+    // This helps us skip duplicate diagnostics on implicit lambda return type refs.
+    if (expandedExpectedReturnType is ConeErrorType && commonSuperType is ConeErrorType) {
+        return commonSuperType
+    }
+
     return if (isPassedAsFunctionArgument && !commonSuperType.fullyExpandedType(session).isUnit) {
         expectedReturnType ?: commonSuperType
     } else {
@@ -429,28 +438,18 @@ fun BodyResolveComponents.typeFromCallee(access: FirElement, calleeReference: Fi
         }
         is FirThisReference -> {
             val labelName = calleeReference.labelName
-            val implicitReceiver = implicitReceiverStack[labelName]
+            val possibleImplicitReceivers = implicitReceiverStack[labelName]
             buildResolvedTypeRef {
                 source = null
-                type = implicitReceiver?.type ?: ConeErrorType(
-                    ConeSimpleDiagnostic(
-                        "Unresolved this@$labelName",
-                        DiagnosticKind.UnresolvedLabel
+                type = when {
+                    possibleImplicitReceivers.size >= 2 -> ConeErrorType(
+                        ConeSimpleDiagnostic("Ambiguous this@$labelName", DiagnosticKind.AmbiguousLabel)
                     )
-                )
-            }
-        }
-        is FirSuperReference -> {
-            val labelName = calleeReference.labelName
-            val implicitReceiver =
-                if (labelName != null) implicitReceiverStack[labelName] as? ImplicitDispatchReceiverValue
-                else implicitReceiverStack.lastDispatchReceiver()
-            val resolvedTypeRef =
-                calleeReference.superTypeRef as? FirResolvedTypeRef
-                    ?: implicitReceiver?.boundSymbol?.fir?.superTypeRefs?.singleOrNull() as? FirResolvedTypeRef
-            resolvedTypeRef ?: buildErrorTypeRef {
-                source = calleeReference.source
-                diagnostic = ConeUnresolvedNameError(Name.identifier("super"))
+                    possibleImplicitReceivers.isEmpty() -> ConeErrorType(
+                        ConeSimpleDiagnostic("Unresolved this@$labelName", DiagnosticKind.UnresolvedLabel)
+                    )
+                    else -> possibleImplicitReceivers.single().type
+                }
             }
         }
         else -> errorWithAttachment("Failed to extract type from: ${calleeReference::class.simpleName}") {
@@ -625,9 +624,14 @@ fun FirResolvedTypeRef.initialTypeOfCandidate(candidate: Candidate): ConeKotlinT
     return resultingSubstitutor.safeSubstitute(system, candidate.substitutor.substituteOrSelf(type)) as ConeKotlinType
 }
 
-fun FirCallableDeclaration.getContainingClass(session: FirSession): FirRegularClass? =
+/**
+ * The containing symbol is resolved using the declaration-site session.
+ * The semantics is similar to [FirBasedSymbol<*>.getContainingClassSymbol][org.jetbrains.kotlin.fir.analysis.checkers.getContainingClassSymbol],
+ * see its KDoc for an example.
+ */
+fun FirCallableDeclaration.getContainingClass(): FirRegularClass? =
     this.containingClassLookupTag()?.let { lookupTag ->
-        session.symbolProvider.getSymbolByLookupTag(lookupTag)?.fir as? FirRegularClass
+        lookupTag.toRegularClassSymbol(moduleData.session)?.fir
     }
 
 internal fun FirFunction.areNamedArgumentsForbiddenIgnoringOverridden(): Boolean =
@@ -728,8 +732,11 @@ fun createConeDiagnosticForCandidateWithError(
                 // We report the nearest invisible containing declaration, otherwise we'll get a confusing diagnostic like
                 // Cannot access 'foo', it is public in 'Bar'.
                 declaration
-                    .parentDeclarationSequence(session, candidate.dispatchReceiver, candidate.callInfo.containingDeclarations)
-                    ?.firstOrNull {
+                    .parentDeclarationSequence(
+                        session,
+                        candidate.dispatchReceiver?.expression,
+                        candidate.callInfo.containingDeclarations
+                    )?.firstOrNull {
                         !session.visibilityChecker.isVisible(
                             it,
                             session,
@@ -742,11 +749,8 @@ fun createConeDiagnosticForCandidateWithError(
                         return ConeVisibilityError(it.symbol)
                     }
             }
-            if (symbol is FirPropertySymbol && SetterVisibilityError in candidate.diagnostics) {
-                ConeSetterVisibilityError(symbol)
-            } else {
-                ConeVisibilityError(symbol)
-            }
+
+            ConeVisibilityError(symbol)
         }
         CandidateApplicability.INAPPLICABLE_WRONG_RECEIVER -> ConeInapplicableWrongReceiver(listOf(candidate))
         CandidateApplicability.K2_NO_COMPANION_OBJECT -> ConeNoCompanionObject(candidate)

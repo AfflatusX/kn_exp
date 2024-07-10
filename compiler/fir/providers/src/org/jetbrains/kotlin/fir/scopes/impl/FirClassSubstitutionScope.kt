@@ -16,8 +16,8 @@ import org.jetbrains.kotlin.fir.originalForSubstitutionOverride
 import org.jetbrains.kotlin.fir.resolve.ScopeSessionKey
 import org.jetbrains.kotlin.fir.resolve.substitution.ConeSubstitutor
 import org.jetbrains.kotlin.fir.resolve.substitution.chain
-import org.jetbrains.kotlin.fir.scopes.DeferredCallableCopyReturnType
 import org.jetbrains.kotlin.fir.scopes.CallableCopyTypeCalculator
+import org.jetbrains.kotlin.fir.scopes.DeferredCallableCopyReturnType
 import org.jetbrains.kotlin.fir.scopes.FirTypeScope
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
 import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTag
@@ -34,7 +34,7 @@ class FirClassSubstitutionScope(
     private val session: FirSession,
     private val useSiteMemberScope: FirTypeScope,
     key: ScopeSessionKey<*, *>,
-    private val substitutor: ConeSubstitutor,
+    val substitutor: ConeSubstitutor,
     private val dispatchReceiverTypeForSubstitutedMembers: ConeClassLikeType,
     private val skipPrivateMembers: Boolean,
     private val makeExpect: Boolean = false,
@@ -291,7 +291,7 @@ class FirClassSubstitutionScope(
 
     private fun createSubstitutedData(member: FirCallableDeclaration, symbolForOverride: FirBasedSymbol<*>): SubstitutedData {
         val memberOwnerClassLookupTag =
-            if (member is FirConstructor) (member.returnTypeRef.coneType as ConeClassLikeType).lookupTag
+            if (member is FirConstructor) member.returnTypeRef.coneType.classLikeLookupTagIfAny
             else member.dispatchReceiverClassLookupTagOrNull()
         val (newTypeParameters, substitutor) = FirFakeOverrideGenerator.createNewTypeParametersAndSubstitutor(
             session,

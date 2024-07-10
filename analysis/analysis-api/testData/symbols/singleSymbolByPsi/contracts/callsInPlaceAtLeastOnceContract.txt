@@ -1,9 +1,10 @@
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: [
     kotlin/OptIn(markerClass = [kotlin.contracts.ExperimentalContracts::class])
       psi: KtAnnotationEntry
   ]
   callableId: /atLeastOnceContract
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: [
     KaContractCallsInPlaceContractEffectDeclaration:
@@ -13,18 +14,24 @@ KaFunctionSymbol:
             KaValueParameterSymbol:
               annotations: []
               callableId: null
+              compilerVisibility: Public
               contextReceivers: []
               generatedPrimaryConstructorProperty: null
               hasDefaultValue: false
+              isActual: false
               isCrossinline: false
+              isExpect: false
               isExtension: false
               isImplicitLambdaParameter: false
               isNoinline: false
+              isVal: true
               isVararg: false
+              location: LOCAL
+              modality: FINAL
               name: block
               origin: SOURCE
               receiverParameter: null
-              returnType: KaFunctionalType:
+              returnType: KaFunctionType:
                 annotations: []
                 typeArguments: [
                   KaUsualClassType:
@@ -33,11 +40,10 @@ KaFunctionSymbol:
                     type: kotlin/Unit
                 ]
                 type: kotlin/Function0<kotlin/Unit>
-              symbolKind: LOCAL
-              typeParameters: []
+              visibility: PUBLIC
               getContainingFileSymbol: KaFileSymbol(callsInPlaceAtLeastOnceContract.kt)
               getContainingJvmClassName: CallsInPlaceAtLeastOnceContractKt
-              getContainingModule: KtSourceModule "Sources of main"
+              getContainingModule: KaSourceModule "Sources of main"
               deprecationStatus: null
       occurrencesRange: AT_LEAST_ONCE
   ]
@@ -54,6 +60,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: atLeastOnceContract
   origin: SOURCE
@@ -62,24 +69,29 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Unit
-  symbolKind: TOP_LEVEL
   typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: block
       origin: SOURCE
       receiverParameter: null
-      returnType: KaFunctionalType:
+      returnType: KaFunctionType:
         annotations: []
         typeArguments: [
           KaUsualClassType:
@@ -88,15 +100,14 @@ KaFunctionSymbol:
             type: kotlin/Unit
         ]
         type: kotlin/Function0<kotlin/Unit>
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: KaFileSymbol(callsInPlaceAtLeastOnceContract.kt)
       getContainingJvmClassName: CallsInPlaceAtLeastOnceContractKt
-      getContainingModule: KtSourceModule "Sources of main"
+      getContainingModule: KaSourceModule "Sources of main"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(callsInPlaceAtLeastOnceContract.kt)
   getContainingJvmClassName: CallsInPlaceAtLeastOnceContractKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

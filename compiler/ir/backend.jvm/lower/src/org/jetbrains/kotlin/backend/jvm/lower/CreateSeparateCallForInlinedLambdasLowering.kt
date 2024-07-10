@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -16,8 +16,11 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.fromSymbolOwner
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
+import org.jetbrains.kotlin.ir.util.isAdaptedFunctionReference
 import org.jetbrains.kotlin.ir.util.isFunctionInlining
+import org.jetbrains.kotlin.ir.util.isLambdaBlock
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 @PhaseDescription(
@@ -58,6 +61,6 @@ class CreateSeparateCallForInlinedLambdasLowering(val context: JvmBackendContext
 
     private fun IrExpression.isInlinableExpression(): Boolean {
         return this is IrFunctionExpression || this is IrFunctionReference || this is IrPropertyReference
-                || (this is IrBlock && origin == IrStatementOrigin.ADAPTED_FUNCTION_REFERENCE)
+                || this.isAdaptedFunctionReference() || this.isLambdaBlock()
     }
 }

@@ -9,6 +9,7 @@ import org.gradle.workers.WorkAction
 import org.jetbrains.kotlin.gradle.utils.getFile
 import org.jetbrains.kotlin.swiftexport.standalone.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.SerializationTools
+import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -31,26 +32,60 @@ internal abstract class SwiftExportAction : WorkAction<SwiftExportParameters> {
 
     override fun execute() {
         runSwiftExport(
-            input = InputModule.Binary(
-                name = parameters.swiftApiModuleName.get(),
-                path = parameters.kotlinLibraryFile.getFile().toPath()
+            input = setOf(
+                InputModule(
+                    name = parameters.swiftApiModuleName.get(),
+                    path = parameters.kotlinLibraryFile.getFile().toPath(),
+                    config = SwiftExportConfig(
+                        settings = mapOf(
+                            SwiftExportConfig.STABLE_DECLARATIONS_ORDER to parameters.stableDeclarationsOrder.getOrElse(true).toString(),
+                            SwiftExportConfig.BRIDGE_MODULE_NAME to parameters.bridgeModuleName.getOrElse(SwiftExportConfig.DEFAULT_BRIDGE_MODULE_NAME),
+                            SwiftExportConfig.RENDER_DOC_COMMENTS to parameters.renderDocComments.getOrElse(false).toString(),
+                        ),
+                        logger = Companion,
+                        distribution = parameters.konanDistribution.get(),
+                        outputPath = parameters.outputPath.getFile().toPath(),
+                        multipleModulesHandlingStrategy = MultipleModulesHandlingStrategy.IntoSingleModule
+                    )
+                )
             ),
-            config = SwiftExportConfig(
-                settings = mapOf(
-                    SwiftExportConfig.STABLE_DECLARATIONS_ORDER to parameters.stableDeclarationsOrder.getOrElse(true).toString(),
-                    SwiftExportConfig.BRIDGE_MODULE_NAME to parameters.bridgeModuleName.getOrElse(SwiftExportConfig.DEFAULT_BRIDGE_MODULE_NAME),
-                    SwiftExportConfig.RENDER_DOC_COMMENTS to parameters.renderDocComments.getOrElse(false).toString(),
-                ),
-                logger = Companion,
-                distribution = parameters.konanDistribution.get(),
-                outputPath = parameters.outputPath.getFile().toPath(),
-                multipleModulesHandlingStrategy = MultipleModulesHandlingStrategy.IntoSingleModule,
-            )
         ).apply {
-            val modules = getOrThrow()
+            val modules = getOrThrow().toPlainList()
             val path = parameters.swiftModulesFile.getFile().canonicalPath
-
-            SerializationTools.writeToJson(modules, path)
+            val json = SerializationTools.writeToJson(modules)
+            File(path).writeText(json)
         }
     }
+}
+
+internal fun Set<SwiftExportModule>.toPlainList(): List<GradleSwiftExportModule> {
+    val modules = mutableListOf<GradleSwiftExportModule>()
+    val processedModules = mutableSetOf<GradleSwiftExportModule>()
+
+    fun processModule(module: SwiftExportModule) {
+        val kgpModule = module.toKGPModule()
+        if (kgpModule in processedModules) return
+
+        modules.add(kgpModule)
+        processedModules.add(kgpModule)
+    }
+
+    this.forEach {
+        processModule(it)
+    }
+
+    return modules
+}
+
+private fun SwiftExportModule.toKGPModule(): GradleSwiftExportModule {
+    return when (this) {
+        is SwiftExportModule.BridgesToKotlin ->
+            GradleSwiftExportModule.BridgesToKotlin(files.toKGPFiles(), bridgeName, name, dependencies.map { it.name })
+        is SwiftExportModule.SwiftOnly ->
+            GradleSwiftExportModule.SwiftOnly(swiftApi.toFile(), name, dependencies.map { it.name })
+    }
+}
+
+private fun SwiftExportFiles.toKGPFiles(): GradleSwiftExportFiles {
+    return GradleSwiftExportFiles(swiftApi.toFile(), kotlinBridges.toFile(), cHeaderBridges.toFile())
 }

@@ -146,6 +146,36 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeTestGenerated extends Abst
   }
 
   @Test
+  @TestMetadata("delegationToExpectInterfaceMixedWithInheritance.kt")
+  public void testDelegationToExpectInterfaceMixedWithInheritance() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/delegationToExpectInterfaceMixedWithInheritance.kt");
+  }
+
+  @Test
+  @TestMetadata("delegationToExpectInterfacesWithClashingScopes.kt")
+  public void testDelegationToExpectInterfacesWithClashingScopes() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/delegationToExpectInterfacesWithClashingScopes.kt");
+  }
+
+  @Test
+  @TestMetadata("delegationWithIntersectionAndTypeParameters.kt")
+  public void testDelegationWithIntersectionAndTypeParameters() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/delegationWithIntersectionAndTypeParameters.kt");
+  }
+
+  @Test
+  @TestMetadata("delegationWithTypeParametersAndInheritance.kt")
+  public void testDelegationWithTypeParametersAndInheritance() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/delegationWithTypeParametersAndInheritance.kt");
+  }
+
+  @Test
+  @TestMetadata("delegationWithTypeParametersAndJavaActualization.kt")
+  public void testDelegationWithTypeParametersAndJavaActualization() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/delegationWithTypeParametersAndJavaActualization.kt");
+  }
+
+  @Test
   @TestMetadata("expectAbstractToString.kt")
   public void testExpectAbstractToString() {
     runTest("compiler/testData/diagnostics/tests/multiplatform/expectAbstractToString.kt");
@@ -179,6 +209,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeTestGenerated extends Abst
   @TestMetadata("expectActualMainInTheSameModuleDifferentFiles.kt")
   public void testExpectActualMainInTheSameModuleDifferentFiles() {
     runTest("compiler/testData/diagnostics/tests/multiplatform/expectActualMainInTheSameModuleDifferentFiles.kt");
+  }
+
+  @Test
+  @TestMetadata("expectConstructors.kt")
+  public void testExpectConstructors() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/expectConstructors.kt");
   }
 
   @Test
@@ -344,6 +380,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeTestGenerated extends Abst
   }
 
   @Test
+  @TestMetadata("missingActual.kt")
+  public void testMissingActual() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/missingActual.kt");
+  }
+
+  @Test
   @TestMetadata("modifierApplicability.kt")
   public void testModifierApplicability() {
     runTest("compiler/testData/diagnostics/tests/multiplatform/modifierApplicability.kt");
@@ -377,6 +419,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeTestGenerated extends Abst
   @TestMetadata("nestedClassViaActualTypealiasWithTypeParam.kt")
   public void testNestedClassViaActualTypealiasWithTypeParam() {
     runTest("compiler/testData/diagnostics/tests/multiplatform/nestedClassViaActualTypealiasWithTypeParam.kt");
+  }
+
+  @Test
+  @TestMetadata("noOverrideClashWithSignatureInMppCommon.kt")
+  public void testNoOverrideClashWithSignatureInMppCommon() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/noOverrideClashWithSignatureInMppCommon.kt");
   }
 
   @Test
@@ -467,6 +515,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeTestGenerated extends Abst
   @TestMetadata("typeResolutionOfNestedClassActualizedViaTypealias.kt")
   public void testTypeResolutionOfNestedClassActualizedViaTypealias() {
     runTest("compiler/testData/diagnostics/tests/multiplatform/typeResolutionOfNestedClassActualizedViaTypealias.kt");
+  }
+
+  @Test
+  @TestMetadata("valueClassWithPrivateConstructor.kt")
+  public void testValueClassWithPrivateConstructor() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/valueClassWithPrivateConstructor.kt");
   }
 
   @Test
@@ -1507,9 +1561,21 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeTestGenerated extends Abst
     }
 
     @Test
+    @TestMetadata("expectEnumIntersection.kt")
+    public void testExpectEnumIntersection() {
+      runTest("compiler/testData/diagnostics/tests/multiplatform/exhaustiveness/expectEnumIntersection.kt");
+    }
+
+    @Test
     @TestMetadata("expectSealedClass.kt")
     public void testExpectSealedClass() {
       runTest("compiler/testData/diagnostics/tests/multiplatform/exhaustiveness/expectSealedClass.kt");
+    }
+
+    @Test
+    @TestMetadata("expectSealedClassIntersection.kt")
+    public void testExpectSealedClassIntersection() {
+      runTest("compiler/testData/diagnostics/tests/multiplatform/exhaustiveness/expectSealedClassIntersection.kt");
     }
 
     @Test

@@ -5,19 +5,16 @@
 
 package org.jetbrains.kotlin.analysis.api.platform.modification
 
-import org.jetbrains.kotlin.analysis.project.structure.KtModule
+import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
 
 public fun interface KotlinModuleOutOfBlockModificationListener {
     /**
      * [onModification] is invoked in a write action before or after an out-of-block modification happens in [module]'s source code.
      *
-     * See [KotlinModificationTrackerFactory.createProjectWideOutOfBlockModificationTracker] for an explanation of out-of-block
-     * modifications.
-     *
      * This event may be published for any and all source code changes, not just out-of-block modifications, to simplify the implementation
      * of modification detection.
      *
-     * @see KotlinModificationTopics
+     * See [KotlinModificationTopics] for an explanation of out-of-block modifications.
      */
-    public fun onModification(module: KtModule)
+    public fun onModification(module: KaModule)
 }

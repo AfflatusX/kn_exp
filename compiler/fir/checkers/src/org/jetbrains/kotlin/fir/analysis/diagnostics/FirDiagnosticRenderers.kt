@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.diagnostics.rendering.Renderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
 import org.jetbrains.kotlin.fir.FirModuleData
 import org.jetbrains.kotlin.fir.containingClassLookupTag
+import org.jetbrains.kotlin.fir.declarations.FirConstructor
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.references.FirNamedReference
@@ -41,9 +42,7 @@ object FirDiagnosticRenderers {
     @OptIn(SymbolInternals::class)
     val SYMBOL = Renderer { symbol: FirBasedSymbol<*> ->
         when (symbol) {
-            is FirClassLikeSymbol<*>,
-            is FirCallableSymbol<*>,
-            -> FirRenderer(
+            is FirClassLikeSymbol, is FirCallableSymbol -> FirRenderer(
                 typeRenderer = ConeTypeRendererForReadability { ConeIdShortRenderer() },
                 idRenderer = ConeIdShortRenderer(),
                 classMemberRenderer = FirNoClassMemberRenderer(),
@@ -53,7 +52,7 @@ object FirDiagnosticRenderers {
                 modifierRenderer = FirPartialModifierRenderer(),
                 valueParameterRenderer = FirValueParameterRendererForReadability(),
                 declarationRenderer = FirDeclarationRenderer("local "),
-                annotationRenderer = FirAnnotationRendererForReadability(),
+                annotationRenderer = null,
                 lineBreakAfterContextReceivers = false,
                 renderFieldAnnotationSeparately = false,
             ).renderElementAsString(symbol.fir, trim = true)
@@ -213,17 +212,6 @@ object FirDiagnosticRenderers {
     // TODO: properly implement
     val RENDER_TYPE_WITH_ANNOTATIONS = RENDER_TYPE
 
-    val FQ_NAMES_IN_TYPES = Renderer { symbol: FirBasedSymbol<*> ->
-        val idRendererCreator = { ConeIdFullRenderer() }
-        @OptIn(SymbolInternals::class)
-        FirRenderer(
-            annotationRenderer = null,
-            bodyRenderer = null,
-            idRenderer = idRendererCreator(),
-            typeRenderer = ConeTypeRendererForReadability(null, idRendererCreator)
-        ).renderElementAsString(symbol.fir, trim = true)
-    }
-
     val AMBIGUOUS_CALLS = Renderer { candidates: Collection<FirBasedSymbol<*>> ->
         candidates.joinToString(separator = "\n", prefix = "\n") { symbol ->
             SYMBOL.render(symbol)
@@ -288,5 +276,33 @@ object FirDiagnosticRenderers {
 
     val SYMBOL_WITH_CONTAINING_DECLARATION = Renderer { symbol: FirCallableSymbol<*> ->
         "'${SYMBOL.render(symbol)}' defined in ${NAME_OF_CONTAINING_DECLARATION_OR_FILE.render(symbol.callableId)}"
+    }
+
+    val SYMBOL_KIND = Renderer { symbol: FirBasedSymbol<*> ->
+        when (symbol) {
+            is FirPropertyAccessorSymbol -> "property accessor"
+            is FirConstructorSymbol -> "constructor"
+            is FirFunctionSymbol -> "function"
+            is FirPropertySymbol -> "property"
+            is FirBackingFieldSymbol -> "backing field"
+            is FirDelegateFieldSymbol -> "delegate field"
+            is FirEnumEntrySymbol -> "enum entry"
+            is FirFieldSymbol -> "field"
+            is FirValueParameterSymbol -> "value parameter"
+            is FirFileSymbol -> "file"
+            is FirAnonymousInitializerSymbol -> "initializer"
+            is FirTypeParameterSymbol -> "type parameter"
+            is FirRegularClassSymbol -> when (symbol.classKind) {
+                ClassKind.CLASS -> "class"
+                ClassKind.INTERFACE -> "interface"
+                ClassKind.ENUM_CLASS -> "enum class"
+                ClassKind.ENUM_ENTRY -> "enum entry"
+                ClassKind.ANNOTATION_CLASS -> "annotation class"
+                ClassKind.OBJECT -> "object"
+            }
+            is FirAnonymousObjectSymbol -> "anonymous object"
+            is FirTypeAliasSymbol -> "type alias"
+            else -> "declaration"
+        }
     }
 }

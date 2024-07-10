@@ -1,6 +1,7 @@
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/collections/listOf
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -16,6 +17,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: listOf
   origin: LIBRARY
@@ -28,7 +30,6 @@ KaFunctionSymbol:
         type: T
     ]
     type: kotlin/collections/List<T>
-  symbolKind: TOP_LEVEL
   typeParameters: [
     KaTypeParameterSymbol(T)
   ]
@@ -36,39 +37,45 @@ KaFunctionSymbol:
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: element
       origin: LIBRARY
       receiverParameter: null
       returnType: KaTypeParameterType:
         annotations: []
         type: T
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: null
       getContainingJvmClassName: kotlin.collections.CollectionsKt
-      getContainingModule: KtLibraryModule "Library kotlin-stdlib"
+      getContainingModule: KaLibraryModule "Library kotlin-stdlib"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.collections.CollectionsKt
-  getContainingModule: KtLibraryModule "Library kotlin-stdlib"
+  getContainingModule: KaLibraryModule "Library kotlin-stdlib"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: [
     kotlin/internal/InlineOnly()
       psi: null
   ]
   callableId: kotlin/collections/listOf
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -84,6 +91,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: listOf
   origin: LIBRARY
@@ -96,20 +104,20 @@ KaFunctionSymbol:
         type: T
     ]
     type: kotlin/collections/List<T>
-  symbolKind: TOP_LEVEL
   typeParameters: [
     KaTypeParameterSymbol(T)
   ]
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.collections.CollectionsKt
-  getContainingModule: KtLibraryModule "Library kotlin-stdlib"
+  getContainingModule: KaLibraryModule "Library kotlin-stdlib"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/collections/listOf
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -125,6 +133,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: listOf
   origin: LIBRARY
@@ -137,7 +146,6 @@ KaFunctionSymbol:
         type: T
     ]
     type: kotlin/collections/List<T>
-  symbolKind: TOP_LEVEL
   typeParameters: [
     KaTypeParameterSymbol(T)
   ]
@@ -145,29 +153,34 @@ KaFunctionSymbol:
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: true
+      location: LOCAL
+      modality: FINAL
       name: elements
       origin: LIBRARY
       receiverParameter: null
       returnType: KaTypeParameterType:
         annotations: []
         type: T
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: null
       getContainingJvmClassName: kotlin.collections.CollectionsKt
-      getContainingModule: KtLibraryModule "Library kotlin-stdlib"
+      getContainingModule: KaLibraryModule "Library kotlin-stdlib"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.collections.CollectionsKt
-  getContainingModule: KtLibraryModule "Library kotlin-stdlib"
+  getContainingModule: KaLibraryModule "Library kotlin-stdlib"
   deprecationStatus: null

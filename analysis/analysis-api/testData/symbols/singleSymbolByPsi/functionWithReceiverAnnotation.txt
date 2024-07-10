@@ -1,6 +1,7 @@
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: /foo
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -16,6 +17,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: foo
   origin: SOURCE
@@ -24,8 +26,9 @@ KaFunctionSymbol:
       ReceiverAnnotation()
         psi: KtAnnotationEntry
     ]
+    location: LOCAL
     origin: SOURCE
-    owningCallableSymbol: KaFunctionSymbol(/foo)
+    owningCallableSymbol: KaNamedFunctionSymbol(/foo)
     type: KaUsualClassType:
       annotations: [
         ReceiverTypeAnnotation()
@@ -34,17 +37,16 @@ KaFunctionSymbol:
       typeArguments: []
       type: @R|ReceiverTypeAnnotation|()  kotlin/Int
     getContainingFileSymbol: KaFileSymbol(functionWithReceiverAnnotation.kt)
-    getContainingModule: KtSourceModule "Sources of main"
+    getContainingModule: KaSourceModule "Sources of main"
     deprecationStatus: null
   returnType: KaUsualClassType:
     annotations: []
     typeArguments: []
     type: kotlin/Unit
-  symbolKind: TOP_LEVEL
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(functionWithReceiverAnnotation.kt)
   getContainingJvmClassName: FunctionWithReceiverAnnotationKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

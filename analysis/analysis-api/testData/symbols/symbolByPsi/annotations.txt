@@ -1,6 +1,7 @@
 KaConstructorSymbol:
   annotations: []
   callableId: null
+  compilerVisibility: Public
   containingClassId: Anno
   contextReceivers: []
   hasStableParameterNames: true
@@ -8,26 +9,34 @@ KaConstructorSymbol:
   isExpect: false
   isExtension: false
   isPrimary: true
+  location: CLASS
+  modality: FINAL
   origin: SOURCE
   receiverParameter: null
   returnType: KaUsualClassType:
     annotations: []
     typeArguments: []
     type: Anno
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: KaKotlinPropertySymbol:
         annotations: []
         backingFieldSymbol: KaBackingFieldSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
+          isActual: false
+          isExpect: false
           isExtension: false
+          isVal: true
+          location: PROPERTY
+          modality: FINAL
           name: field
           origin: PROPERTY_BACKING_FIELD
           owningProperty: KaKotlinPropertySymbol(/Anno.param1)
@@ -36,24 +45,28 @@ KaConstructorSymbol:
             annotations: []
             typeArguments: []
             type: kotlin/String
-          symbolKind: LOCAL
-          typeParameters: []
+          visibility: PUBLIC
           getContainingFileSymbol: KaFileSymbol(annotations.kt)
           getContainingJvmClassName: Anno
-          getContainingModule: KtSourceModule "Sources of main"
+          getContainingModule: KaSourceModule "Sources of main"
           deprecationStatus: null
         callableId: /Anno.param1
+        compilerVisibility: Public
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
           hasBody: false
           hasStableParameterNames: true
+          isActual: false
           isDefault: true
+          isExpect: false
           isExtension: false
           isInline: false
           isOverride: false
+          location: PROPERTY
           modality: FINAL
           origin: SOURCE
           receiverParameter: null
@@ -61,17 +74,15 @@ KaConstructorSymbol:
             annotations: []
             typeArguments: []
             type: kotlin/String
-          symbolKind: ACCESSOR
-          typeParameters: []
           valueParameters: []
-          visibility: Public
+          visibility: PUBLIC
           getDispatchReceiver(): KaUsualClassType:
             annotations: []
             typeArguments: []
             type: Anno
           getContainingFileSymbol: KaFileSymbol(annotations.kt)
           getContainingJvmClassName: Anno
-          getContainingModule: KtSourceModule "Sources of main"
+          getContainingModule: KaSourceModule "Sources of main"
           deprecationStatus: null
         hasBackingField: true
         hasGetter: true
@@ -87,6 +98,7 @@ KaConstructorSymbol:
         isOverride: false
         isStatic: false
         isVal: true
+        location: CLASS
         modality: FINAL
         name: param1
         origin: SOURCE
@@ -96,27 +108,31 @@ KaConstructorSymbol:
           typeArguments: []
           type: kotlin/String
         setter: null
-        symbolKind: CLASS_MEMBER
         typeParameters: []
-        visibility: Public
+        visibility: PUBLIC
         getDispatchReceiver(): KaUsualClassType:
           annotations: []
           typeArguments: []
           type: Anno
         getContainingFileSymbol: KaFileSymbol(annotations.kt)
         getContainingJvmClassName: Anno
-        getContainingModule: KtSourceModule "Sources of main"
+        getContainingModule: KaSourceModule "Sources of main"
         deprecationStatus: null
         getterDeprecationStatus: null
         javaGetterName: getParam1
         javaSetterName: null
         setterDeprecationStatus: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: param1
       origin: SOURCE
       receiverParameter: null
@@ -124,23 +140,29 @@ KaConstructorSymbol:
         annotations: []
         typeArguments: []
         type: kotlin/String
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: KaFileSymbol(annotations.kt)
       getContainingJvmClassName: Anno
-      getContainingModule: KtSourceModule "Sources of main"
+      getContainingModule: KaSourceModule "Sources of main"
       deprecationStatus: null
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: KaKotlinPropertySymbol:
         annotations: []
         backingFieldSymbol: KaBackingFieldSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
+          isActual: false
+          isExpect: false
           isExtension: false
+          isVal: true
+          location: PROPERTY
+          modality: FINAL
           name: field
           origin: PROPERTY_BACKING_FIELD
           owningProperty: KaKotlinPropertySymbol(/Anno.param2)
@@ -149,24 +171,28 @@ KaConstructorSymbol:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: LOCAL
-          typeParameters: []
+          visibility: PUBLIC
           getContainingFileSymbol: KaFileSymbol(annotations.kt)
           getContainingJvmClassName: Anno
-          getContainingModule: KtSourceModule "Sources of main"
+          getContainingModule: KaSourceModule "Sources of main"
           deprecationStatus: null
         callableId: /Anno.param2
+        compilerVisibility: Public
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
           callableId: null
+          compilerVisibility: Public
           contextReceivers: []
           hasBody: false
           hasStableParameterNames: true
+          isActual: false
           isDefault: true
+          isExpect: false
           isExtension: false
           isInline: false
           isOverride: false
+          location: PROPERTY
           modality: FINAL
           origin: SOURCE
           receiverParameter: null
@@ -174,17 +200,15 @@ KaConstructorSymbol:
             annotations: []
             typeArguments: []
             type: kotlin/Int
-          symbolKind: ACCESSOR
-          typeParameters: []
           valueParameters: []
-          visibility: Public
+          visibility: PUBLIC
           getDispatchReceiver(): KaUsualClassType:
             annotations: []
             typeArguments: []
             type: Anno
           getContainingFileSymbol: KaFileSymbol(annotations.kt)
           getContainingJvmClassName: Anno
-          getContainingModule: KtSourceModule "Sources of main"
+          getContainingModule: KaSourceModule "Sources of main"
           deprecationStatus: null
         hasBackingField: true
         hasGetter: true
@@ -200,6 +224,7 @@ KaConstructorSymbol:
         isOverride: false
         isStatic: false
         isVal: true
+        location: CLASS
         modality: FINAL
         name: param2
         origin: SOURCE
@@ -209,27 +234,31 @@ KaConstructorSymbol:
           typeArguments: []
           type: kotlin/Int
         setter: null
-        symbolKind: CLASS_MEMBER
         typeParameters: []
-        visibility: Public
+        visibility: PUBLIC
         getDispatchReceiver(): KaUsualClassType:
           annotations: []
           typeArguments: []
           type: Anno
         getContainingFileSymbol: KaFileSymbol(annotations.kt)
         getContainingJvmClassName: Anno
-        getContainingModule: KtSourceModule "Sources of main"
+        getContainingModule: KaSourceModule "Sources of main"
         deprecationStatus: null
         getterDeprecationStatus: null
         javaGetterName: getParam2
         javaSetterName: null
         setterDeprecationStatus: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: param2
       origin: SOURCE
       receiverParameter: null
@@ -237,24 +266,24 @@ KaConstructorSymbol:
         annotations: []
         typeArguments: []
         type: kotlin/Int
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: KaFileSymbol(annotations.kt)
       getContainingJvmClassName: Anno
-      getContainingModule: KtSourceModule "Sources of main"
+      getContainingModule: KaSourceModule "Sources of main"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(annotations.kt)
   getContainingJvmClassName: Anno
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
-KaNamedClassOrObjectSymbol:
+KaNamedClassSymbol:
   annotations: []
   classId: Anno
   classKind: ANNOTATION_CLASS
   companionObject: null
+  compilerVisibility: Public
   contextReceivers: []
   isActual: false
   isData: false
@@ -263,6 +292,7 @@ KaNamedClassOrObjectSymbol:
   isFun: false
   isInline: false
   isInner: false
+  location: TOP_LEVEL
   modality: FINAL
   name: Anno
   origin: SOURCE
@@ -272,20 +302,20 @@ KaNamedClassOrObjectSymbol:
       typeArguments: []
       type: kotlin/Annotation
   ]
-  symbolKind: TOP_LEVEL
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(annotations.kt)
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   annotationApplicableTargets: [CLASS, ANNOTATION_CLASS, PROPERTY, FIELD, LOCAL_VARIABLE, VALUE_PARAMETER, CONSTRUCTOR, FUNCTION, PROPERTY_GETTER, PROPERTY_SETTER, BACKING_FIELD]
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: [
     Anno(param1 = "funparam", param2 = 3)
       psi: KtAnnotationEntry
   ]
   callableId: /X.x
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -301,6 +331,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: x
   origin: SOURCE
@@ -309,20 +340,19 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Unit
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: X
   getContainingFileSymbol: KaFileSymbol(annotations.kt)
   getContainingJvmClassName: X
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
-KaNamedClassOrObjectSymbol:
+KaNamedClassSymbol:
   annotations: [
     Anno(param1 = "param", param2 = 2)
       psi: KtAnnotationEntry
@@ -330,6 +360,7 @@ KaNamedClassOrObjectSymbol:
   classId: X
   classKind: CLASS
   companionObject: null
+  compilerVisibility: Public
   contextReceivers: []
   isActual: false
   isData: false
@@ -338,6 +369,7 @@ KaNamedClassOrObjectSymbol:
   isFun: false
   isInline: false
   isInner: false
+  location: TOP_LEVEL
   modality: FINAL
   name: X
   origin: SOURCE
@@ -347,10 +379,9 @@ KaNamedClassOrObjectSymbol:
       typeArguments: []
       type: kotlin/Any
   ]
-  symbolKind: TOP_LEVEL
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(annotations.kt)
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   annotationApplicableTargets: null
   deprecationStatus: null

@@ -5,21 +5,27 @@
 
 package org.jetbrains.kotlin.analysis.api.platform.declarations
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.analysis.api.platform.KotlinComposableProviderMerger
 import org.jetbrains.kotlin.analysis.api.platform.KotlinPlatformComponent
-import org.jetbrains.kotlin.analysis.project.structure.KtModule
+import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
 
 /**
+ * [KotlinDeclarationProviderFactory] creates a scope-based [KotlinDeclarationProvider] which covers all non-generated, physical
+ * declarations found in source files and possibly indices/stubs for libraries.
+ *
+ * The declaration provider created by [KotlinDeclarationProviderFactory] is considered the **main declaration provider** for the given
+ * scope. Other kinds of declaration providers exist, but they usually cover generated declarations for edge cases.
+ *
  * @see KotlinDeclarationProvider
  */
-public abstract class KotlinDeclarationProviderFactory : KotlinPlatformComponent {
-    public abstract fun createDeclarationProvider(scope: GlobalSearchScope, contextualModule: KtModule?): KotlinDeclarationProvider
+public interface KotlinDeclarationProviderFactory : KotlinPlatformComponent {
+    public fun createDeclarationProvider(scope: GlobalSearchScope, contextualModule: KaModule?): KotlinDeclarationProvider
 
     public companion object {
-        public fun getInstance(project: Project): KotlinDeclarationProviderFactory =
-            project.getService(KotlinDeclarationProviderFactory::class.java)
+        public fun getInstance(project: Project): KotlinDeclarationProviderFactory = project.service()
     }
 }
 
@@ -33,10 +39,9 @@ public abstract class KotlinDeclarationProviderFactory : KotlinPlatformComponent
  * [createDeclarationProvider]. [KotlinDeclarationProviderMerger] should implement proper merging logic that takes these concerns into
  * account.
  */
-public abstract class KotlinDeclarationProviderMerger : KotlinComposableProviderMerger<KotlinDeclarationProvider>, KotlinPlatformComponent {
+public interface KotlinDeclarationProviderMerger : KotlinComposableProviderMerger<KotlinDeclarationProvider>, KotlinPlatformComponent {
     public companion object {
-        public fun getInstance(project: Project): KotlinDeclarationProviderMerger =
-            project.getService(KotlinDeclarationProviderMerger::class.java)
+        public fun getInstance(project: Project): KotlinDeclarationProviderMerger = project.service()
     }
 }
 
@@ -48,7 +53,7 @@ public abstract class KotlinDeclarationProviderMerger : KotlinComposableProvider
  * functionality such as package set computation may also depend on the contextual module, as the declaration provider may require
  * additional information not available in the [scope].
  */
-public fun Project.createDeclarationProvider(scope: GlobalSearchScope, contextualModule: KtModule?): KotlinDeclarationProvider =
+public fun Project.createDeclarationProvider(scope: GlobalSearchScope, contextualModule: KaModule?): KotlinDeclarationProvider =
     KotlinDeclarationProviderFactory.getInstance(this).createDeclarationProvider(scope, contextualModule)
 
 public fun Project.mergeDeclarationProviders(declarationProviders: List<KotlinDeclarationProvider>): KotlinDeclarationProvider =

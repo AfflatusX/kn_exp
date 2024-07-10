@@ -17,9 +17,10 @@ scopes:
     packages: 0
     classifiers: 0
     callables: 4
-      KaFunctionSymbol:
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: test/Receiver.fromReceiver
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -35,6 +36,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: FINAL
         name: fromReceiver
         origin: SOURCE
@@ -43,13 +45,13 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Unit
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: kotlin/Any.equals
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -65,6 +67,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: OPEN
         name: equals
         origin: LIBRARY
@@ -73,20 +76,25 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Boolean
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: [
           KaValueParameterSymbol:
             annotations: []
             callableId: null
+            compilerVisibility: Public
             contextReceivers: []
             generatedPrimaryConstructorProperty: null
             hasDefaultValue: false
+            isActual: false
             isCrossinline: false
+            isExpect: false
             isExtension: false
             isImplicitLambdaParameter: false
             isNoinline: false
+            isVal: true
             isVararg: false
+            location: LOCAL
+            modality: FINAL
             name: other
             origin: LIBRARY
             receiverParameter: null
@@ -94,13 +102,13 @@ scopes:
               annotations: []
               typeArguments: []
               type: kotlin/Any?
-            symbolKind: LOCAL
-            typeParameters: []
+            visibility: PUBLIC
         ]
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: kotlin/Any.hashCode
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -116,6 +124,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: OPEN
         name: hashCode
         origin: LIBRARY
@@ -124,13 +133,13 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/Int
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
-      KaFunctionSymbol:
+        visibility: PUBLIC
+      KaNamedFunctionSymbol:
         annotations: []
         callableId: kotlin/Any.toString
+        compilerVisibility: Public
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -146,6 +155,7 @@ scopes:
         isStatic: false
         isSuspend: false
         isTailRec: false
+        location: CLASS
         modality: OPEN
         name: toString
         origin: LIBRARY
@@ -154,14 +164,14 @@ scopes:
           annotations: []
           typeArguments: []
           type: kotlin/String
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
+        visibility: PUBLIC
     constructors: 1
       KaConstructorSymbol:
         annotations: []
         callableId: null
+        compilerVisibility: Public
         containingClassId: test/Receiver
         contextReceivers: []
         hasStableParameterNames: true
@@ -169,16 +179,17 @@ scopes:
         isExpect: false
         isExtension: false
         isPrimary: true
+        location: CLASS
+        modality: FINAL
         origin: SOURCE_MEMBER_GENERATED
         receiverParameter: null
         returnType: KaUsualClassType:
           annotations: []
           typeArguments: []
           type: test/Receiver
-        symbolKind: CLASS_MEMBER
         typeParameters: []
         valueParameters: []
-        visibility: Public
+        visibility: PUBLIC
 
   LocalScope, index = 2
     packages: 0
@@ -201,11 +212,12 @@ scopes:
   PackageMemberScope, index = 5
     packages: 0
     classifiers: 3
-      KaNamedClassOrObjectSymbol:
+      KaNamedClassSymbol:
         annotations: []
         classId: test/Receiver
         classKind: CLASS
         companionObject: null
+        compilerVisibility: Public
         contextReceivers: []
         isActual: false
         isData: false
@@ -214,6 +226,7 @@ scopes:
         isFun: false
         isInline: false
         isInner: false
+        location: TOP_LEVEL
         modality: FINAL
         name: Receiver
         origin: SOURCE
@@ -223,14 +236,14 @@ scopes:
             typeArguments: []
             type: kotlin/Any
         ]
-        symbolKind: TOP_LEVEL
         typeParameters: []
-        visibility: Public
-      KaNamedClassOrObjectSymbol:
+        visibility: PUBLIC
+      KaNamedClassSymbol:
         annotations: []
         classId: test/Base
         classKind: CLASS
         companionObject: null
+        compilerVisibility: Public
         contextReceivers: []
         isActual: false
         isData: false
@@ -239,6 +252,7 @@ scopes:
         isFun: false
         isInline: false
         isInner: false
+        location: TOP_LEVEL
         modality: OPEN
         name: Base
         origin: SOURCE
@@ -248,14 +262,14 @@ scopes:
             typeArguments: []
             type: kotlin/Any
         ]
-        symbolKind: TOP_LEVEL
         typeParameters: []
-        visibility: Public
-      KaNamedClassOrObjectSymbol:
+        visibility: PUBLIC
+      KaNamedClassSymbol:
         annotations: []
         classId: test/Child
         classKind: CLASS
         companionObject: null
+        compilerVisibility: Public
         contextReceivers: []
         isActual: false
         isData: false
@@ -264,6 +278,7 @@ scopes:
         isFun: false
         isInline: false
         isInner: false
+        location: TOP_LEVEL
         modality: FINAL
         name: Child
         origin: SOURCE
@@ -273,9 +288,8 @@ scopes:
             typeArguments: []
             type: test/Base
         ]
-        symbolKind: TOP_LEVEL
         typeParameters: []
-        visibility: Public
+        visibility: PUBLIC
     callables: 0
     constructors: 0
 

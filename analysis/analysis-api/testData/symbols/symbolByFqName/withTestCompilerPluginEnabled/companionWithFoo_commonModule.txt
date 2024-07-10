@@ -1,8 +1,9 @@
-KaNamedClassOrObjectSymbol:
+KaNamedClassSymbol:
   annotations: []
   classId: test/WithGeneratedCompanion.Companion
   classKind: COMPANION_OBJECT
   companionObject: null
+  compilerVisibility: Public
   contextReceivers: []
   isActual: false
   isData: false
@@ -11,6 +12,7 @@ KaNamedClassOrObjectSymbol:
   isFun: false
   isInline: false
   isInner: false
+  location: CLASS
   modality: FINAL
   name: Companion
   origin: PLUGIN
@@ -20,10 +22,9 @@ KaNamedClassOrObjectSymbol:
       typeArguments: []
       type: kotlin/Any
   ]
-  symbolKind: CLASS_MEMBER
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(main.kt)
-  getContainingModule: KtSourceModule "Sources of common"
+  getContainingModule: KaSourceModule "Sources of common"
   annotationApplicableTargets: null
   deprecationStatus: null

@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.backend.common.lower
 
 import org.jetbrains.kotlin.backend.common.BodyLoweringPass
 import org.jetbrains.kotlin.backend.common.CommonBackendContext
+import org.jetbrains.kotlin.backend.common.capturedFields
 import org.jetbrains.kotlin.backend.common.descriptors.synthesizedString
 import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -70,6 +71,7 @@ open class LocalDeclarationsLowering(
     val suggestUniqueNames: Boolean = true, // When `true` appends a `$#index` suffix to lifted declaration names
     val compatibilityModeForInlinedLocalDelegatedPropertyAccessors: Boolean = false, // Keep old names because of KT-49030
     val forceFieldsForInlineCaptures: Boolean = false, // See `LocalClassContext`
+    val remapTypesInExtractedLocalFunctions: Boolean = true,
 ) : BodyLoweringPass {
 
     override fun lower(irFile: IrFile) {
@@ -310,11 +312,16 @@ open class LocalDeclarationsLowering(
                     val original = localContext.declaration
 
                     this.body = original.body
-                    this.body?.let { localContext.remapTypes(it) }
 
-                    original.valueParameters.filter { v -> v.defaultValue != null }.forEach { argument ->
-                        val body = argument.defaultValue!!
-                        localContext.remapTypes(body)
+                    if (remapTypesInExtractedLocalFunctions) {
+                        this.body?.let { localContext.remapTypes(it) }
+                    }
+
+                    for (argument in original.valueParameters) {
+                        val body = argument.defaultValue ?: continue
+                        if (remapTypesInExtractedLocalFunctions) {
+                            localContext.remapTypes(body)
+                        }
                         oldParameterToNew[argument]!!.defaultValue = body
                     }
                     acceptChildren(SetDeclarationsParentVisitor, this)
@@ -572,8 +579,7 @@ open class LocalDeclarationsLowering(
             val usedCaptureFields = createFieldsForCapturedValues(localClassContext)
             irClass.declarations += usedCaptureFields
 
-            context.mapping.capturedFields[irClass] =
-                (context.mapping.capturedFields[irClass] ?: emptyList()) + usedCaptureFields
+            irClass.capturedFields = (irClass.capturedFields ?: emptyList()) + usedCaptureFields
 
             for (constructorContext in constructorsCallingSuper) {
                 val blockBody = constructorContext.declaration.body as? IrBlockBody

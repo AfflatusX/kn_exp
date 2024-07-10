@@ -5,27 +5,24 @@
 
 package org.jetbrains.kotlin.fir.resolve.transformers
 
-import org.jetbrains.kotlin.KtFakeSourceElementKind
+import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.contracts.description.LogicOperationKind
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.diagnostics.WhenMissingCase
-import org.jetbrains.kotlin.fir.FirElement
-import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.FirEnumEntry
-import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.declarations.collectEnumEntries
 import org.jetbrains.kotlin.fir.declarations.getSealedClassInheritors
 import org.jetbrains.kotlin.fir.declarations.utils.isExpect
 import org.jetbrains.kotlin.fir.declarations.utils.modality
-import org.jetbrains.kotlin.fir.enumWhenTracker
 import org.jetbrains.kotlin.fir.expressions.*
-import org.jetbrains.kotlin.fir.expressions.ExhaustivenessStatus.NotExhaustive
 import org.jetbrains.kotlin.fir.expressions.impl.FirElseIfTrueCondition
-import org.jetbrains.kotlin.fir.reportEnumUsageInWhen
 import org.jetbrains.kotlin.fir.resolve.BodyResolveComponents
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
+import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
+import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
@@ -47,9 +44,9 @@ class FirWhenExhaustivenessTransformer(private val bodyResolveComponents: BodyRe
 
         fun computeAllMissingCases(session: FirSession, whenExpression: FirWhenExpression): List<WhenMissingCase> {
             val subjectType =
-                getSubjectType(session, whenExpression) ?: return NotExhaustive.NO_ELSE_BRANCH.reasons
+                getSubjectType(session, whenExpression) ?: return ExhaustivenessStatus.NotExhaustive.NO_ELSE_BRANCH.reasons
             return buildList {
-                for (type in subjectType.unwrapIntersectionType()) {
+                for (type in subjectType.unwrapTypeParameterAndIntersectionTypes(session)) {
                     val checkers = getCheckers(type, session)
                     collectMissingCases(checkers, whenExpression, type, session)
                 }
@@ -64,10 +61,14 @@ class FirWhenExhaustivenessTransformer(private val bodyResolveComponents: BodyRe
             return subjectType.fullyExpandedType(session).lowerBoundIfFlexible()
         }
 
-        private fun ConeKotlinType.unwrapIntersectionType(): Collection<ConeKotlinType> {
-            return (this as? ConeIntersectionType)?.intersectedTypes ?: listOf(this)
+        private fun ConeKotlinType.unwrapTypeParameterAndIntersectionTypes(session: FirSession): Collection<ConeKotlinType> {
+            return when {
+                this is ConeIntersectionType -> intersectedTypes
+                this is ConeTypeParameterType && session.languageVersionSettings.supportsFeature(LanguageFeature.ExhaustivenessChecksOnTypeParameterBounds)
+                    -> lookupTag.typeParameterSymbol.resolvedBounds.flatMap { it.coneType.unwrapTypeParameterAndIntersectionTypes(session) }
+                else -> listOf(this)
+            }
         }
-
 
         private fun getCheckers(
             subjectType: ConeKotlinType,
@@ -140,10 +141,10 @@ class FirWhenExhaustivenessTransformer(private val bodyResolveComponents: BodyRe
 
         var status: ExhaustivenessStatus = ExhaustivenessStatus.NotExhaustive.NO_ELSE_BRANCH
 
-        if (subjectType.toRegularClassSymbol(session)?.isExpect != true) {
-            val unwrappedIntersectionTypes = subjectType.unwrapIntersectionType()
+        val unwrappedIntersectionTypes = subjectType.unwrapTypeParameterAndIntersectionTypes(bodyResolveComponents.session)
 
-            for (unwrappedSubjectType in unwrappedIntersectionTypes) {
+        for (unwrappedSubjectType in unwrappedIntersectionTypes) {
+            if (unwrappedSubjectType.toRegularClassSymbol(session)?.isExpect != true) {
                 val localStatus = computeStatusForNonIntersectionType(unwrappedSubjectType, session, whenExpression)
                 when {
                     localStatus === ExhaustivenessStatus.ProperlyExhaustive -> {
@@ -294,7 +295,7 @@ private object WhenOnBooleanExhaustivenessChecker : WhenExhaustivenessChecker() 
 
 private object WhenOnEnumExhaustivenessChecker : WhenExhaustivenessChecker() {
     override fun isApplicable(subjectType: ConeKotlinType, session: FirSession): Boolean {
-        val symbol = subjectType.toSymbol(session) as? FirRegularClassSymbol ?: return false
+        val symbol = subjectType.toRegularClassSymbol(session) ?: return false
         return symbol.fir.classKind == ClassKind.ENUM_CLASS
     }
 
@@ -327,7 +328,7 @@ private object WhenOnEnumExhaustivenessChecker : WhenExhaustivenessChecker() {
 
 private object WhenOnSealedClassExhaustivenessChecker : WhenExhaustivenessChecker() {
     override fun isApplicable(subjectType: ConeKotlinType, session: FirSession): Boolean {
-        return (subjectType.toSymbol(session)?.fir as? FirRegularClass)?.modality == Modality.SEALED
+        return subjectType.toRegularClassSymbol(session)?.fir?.modality == Modality.SEALED
     }
 
     override fun computeMissingCases(
@@ -341,7 +342,11 @@ private object WhenOnSealedClassExhaustivenessChecker : WhenExhaustivenessChecke
         whenExpression.accept(ConditionChecker, Flags(allSubclasses, checkedSubclasses, session))
         (allSubclasses - checkedSubclasses).mapNotNullTo(destination) {
             when (it) {
-                is FirClassSymbol<*> -> WhenMissingCase.IsTypeCheckIsMissing(it.classId, it.fir.classKind.isSingleton)
+                is FirClassSymbol<*> -> WhenMissingCase.IsTypeCheckIsMissing(
+                    it.classId,
+                    it.fir.classKind.isSingleton,
+                    it.ownTypeParameterSymbols.size
+                )
                 is FirVariableSymbol<*> -> WhenMissingCase.EnumCheckIsMissing(it.callableId)
                 else -> null
             }

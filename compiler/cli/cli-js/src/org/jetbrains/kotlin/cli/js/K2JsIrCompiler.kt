@@ -33,11 +33,7 @@ import org.jetbrains.kotlin.cli.js.klib.*
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.cli.jvm.plugins.PluginCliParser
-import org.jetbrains.kotlin.config.CommonConfigurationKeys
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.KlibConfigurationKeys
-import org.jetbrains.kotlin.config.Services
-import org.jetbrains.kotlin.config.getModuleNameForSource
+import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
 import org.jetbrains.kotlin.fir.pipeline.Fir2KlibMetadataSerializer
 import org.jetbrains.kotlin.incremental.components.ExpectActualTracker
@@ -46,6 +42,8 @@ import org.jetbrains.kotlin.incremental.js.IncrementalDataProvider
 import org.jetbrains.kotlin.incremental.js.IncrementalNextRoundChecker
 import org.jetbrains.kotlin.incremental.js.IncrementalResultsConsumer
 import org.jetbrains.kotlin.ir.backend.js.*
+import org.jetbrains.kotlin.ir.backend.js.checkers.JsStandardLibrarySpecialCompatibilityChecker
+import org.jetbrains.kotlin.ir.backend.js.checkers.WasmStandardLibrarySpecialCompatibilityChecker
 import org.jetbrains.kotlin.ir.backend.js.dce.DceDumpNameCache
 import org.jetbrains.kotlin.ir.backend.js.dce.dumpDeclarationIrSizesIfNeed
 import org.jetbrains.kotlin.ir.backend.js.ic.*
@@ -57,6 +55,7 @@ import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult
 import org.jetbrains.kotlin.js.config.*
 import org.jetbrains.kotlin.konan.file.ZipFileSystemAccessor
 import org.jetbrains.kotlin.konan.file.ZipFileSystemCacheableAccessor
+import org.jetbrains.kotlin.library.KotlinLibrary
 import org.jetbrains.kotlin.library.impl.BuiltInsPlatform
 import org.jetbrains.kotlin.library.metadata.KlibMetadataVersion
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
@@ -231,6 +230,8 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
         configuration.put(KlibConfigurationKeys.KLIB_NORMALIZE_ABSOLUTE_PATH, arguments.normalizeAbsolutePath)
         configuration.put(KlibConfigurationKeys.PRODUCE_KLIB_SIGNATURES_CLASH_CHECKS, arguments.enableSignatureClashChecks)
 
+        configuration.put(KlibConfigurationKeys.EXPERIMENTAL_DOUBLE_INLINING, arguments.experimentalDoubleInlining)
+
         // ----
 
         val environmentForJS =
@@ -392,7 +393,9 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
                 configurationJs,
                 libraries,
                 friendLibraries
-            )
+            ).also {
+                runStandardLibrarySpecialCompatibilityChecks(it.allDependencies, isWasm = arguments.wasm, messageCollector)
+            }
         } else {
             sourceModule!!
         }
@@ -401,10 +404,19 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
             val generateDts = configuration.getBoolean(JSConfigurationKeys.GENERATE_DTS)
             val generateSourceMaps = configuration.getBoolean(JSConfigurationKeys.SOURCE_MAP)
 
-            val (allModules, backendContext, typeScriptFragment) = compileToLoweredIr(
+            val irModuleInfo = loadIr(
                 depsDescriptors = module,
-                phaseConfig = createPhaseConfig(wasmPhases, arguments, messageCollector),
                 irFactory = IrFactoryImpl,
+                verifySignatures = false,
+                loadFunctionInterfacesIntoStdlib = true,
+            )
+
+            val (allModules, backendContext, typeScriptFragment) = compileToLoweredIr(
+                irModuleInfo,
+                module.mainModule,
+                configuration,
+                performanceManager,
+                phaseConfig = createPhaseConfig(wasmPhases, arguments, messageCollector),
                 exportedDeclarations = setOf(FqName("main")),
                 generateTypeScriptFragment = generateDts,
                 propertyLazyInitialization = arguments.irPropertyLazyInitialization,
@@ -576,6 +588,8 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
 
         val mainModule = MainModule.SourceFiles(environmentForJS.getSourceFiles())
         val moduleStructure = ModulesStructure(environmentForJS.project, mainModule, configuration, libraries, friendLibraries)
+
+        runStandardLibrarySpecialCompatibilityChecks(moduleStructure.allDependencies, isWasm = arguments.wasm, messageCollector)
 
         val lookupTracker = configuration.get(CommonConfigurationKeys.LOOKUP_TRACKER) ?: LookupTracker.DO_NOTHING
 
@@ -752,6 +766,15 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
         return null
     }
 
+    private fun runStandardLibrarySpecialCompatibilityChecks(
+        libraries: List<KotlinLibrary>,
+        isWasm: Boolean,
+        messageCollector: MessageCollector,
+    ) {
+        val checker = if (isWasm) WasmStandardLibrarySpecialCompatibilityChecker() else JsStandardLibrarySpecialCompatibilityChecker()
+        checker.check(libraries, messageCollector)
+    }
+
     override fun setupPlatformSpecificArgumentsAndServices(
         configuration: CompilerConfiguration,
         arguments: K2JSCompilerArguments,
@@ -811,13 +834,6 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
         configuration.putIfNotNull(JSConfigurationKeys.INCREMENTAL_NEXT_ROUND_CHECKER, services[IncrementalNextRoundChecker::class.java])
         configuration.putIfNotNull(CommonConfigurationKeys.LOOKUP_TRACKER, services[LookupTracker::class.java])
         configuration.putIfNotNull(CommonConfigurationKeys.EXPECT_ACTUAL_TRACKER, services[ExpectActualTracker::class.java])
-
-        val errorTolerancePolicy = arguments.errorTolerancePolicy?.let { ErrorTolerancePolicy.resolvePolicy(it) }
-        configuration.putIfNotNull(JSConfigurationKeys.ERROR_TOLERANCE_POLICY, errorTolerancePolicy)
-
-        if (errorTolerancePolicy?.allowErrors == true) {
-            configuration.put(JSConfigurationKeys.DEVELOPER_MODE, true)
-        }
 
         val sourceMapEmbedContentString = arguments.sourceMapEmbedSources
         var sourceMapContentEmbedding: SourceMapSourceEmbedding? = if (sourceMapEmbedContentString != null)

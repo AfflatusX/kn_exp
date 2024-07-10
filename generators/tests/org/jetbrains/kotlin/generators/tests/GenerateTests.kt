@@ -6,10 +6,6 @@
 package org.jetbrains.kotlin.generators.tests
 
 import org.jetbrains.kotlin.allopen.*
-import org.jetbrains.kotlin.android.parcel.AbstractParcelBoxTest
-import org.jetbrains.kotlin.android.parcel.AbstractParcelBytecodeListingTest
-import org.jetbrains.kotlin.android.parcel.AbstractParcelIrBoxTest
-import org.jetbrains.kotlin.android.parcel.AbstractParcelIrBytecodeListingTest
 import org.jetbrains.kotlin.android.synthetic.test.AbstractAndroidBoxTest
 import org.jetbrains.kotlin.android.synthetic.test.AbstractAndroidBytecodeShapeTest
 import org.jetbrains.kotlin.android.synthetic.test.AbstractAndroidIrBoxTest
@@ -48,8 +44,7 @@ import org.jetbrains.kotlin.samWithReceiver.*
 import org.jetbrains.kotlin.scripting.test.AbstractScriptWithCustomDefBlackBoxCodegenTest
 import org.jetbrains.kotlin.scripting.test.AbstractScriptWithCustomDefDiagnosticsTestBase
 import org.jetbrains.kotlin.test.TargetBackend
-import org.jetbrains.kotlinx.atomicfu.AbstractAtomicfuJsIrTest
-import org.jetbrains.kotlinx.atomicfu.AbstractAtomicfuJvmIrTest
+import org.jetbrains.kotlinx.atomicfu.*
 
 
 private class ExcludePattern {
@@ -186,22 +181,6 @@ fun main(args: Array<String>) {
             testClass<AbstractAndroidBytecodeShapeTest> {
                 model("codegen/bytecodeShape", recursive = false, extension = null)
             }
-
-            testClass<AbstractParcelBoxTest> {
-                model("parcel/box", targetBackend = TargetBackend.JVM)
-            }
-
-            testClass<AbstractParcelIrBoxTest> {
-                model("parcel/box", targetBackend = TargetBackend.JVM_IR)
-            }
-
-            testClass<AbstractParcelBytecodeListingTest> {
-                model("parcel/codegen", targetBackend = TargetBackend.JVM)
-            }
-
-            testClass<AbstractParcelIrBytecodeListingTest> {
-                model("parcel/codegen", targetBackend = TargetBackend.JVM_IR)
-            }
         }
 
         testGroup("plugins/jvm-abi-gen/test", "plugins/jvm-abi-gen/testData") {
@@ -290,6 +269,10 @@ fun main(args: Array<String>) {
             testClass<AbstractAtomicfuJsIrTest> {
                 model("box/")
             }
+
+            testClass<AbstractAtomicfuJsFirTest> {
+                model("box/")
+            }
         }
 
         testGroup(
@@ -298,6 +281,10 @@ fun main(args: Array<String>) {
             testRunnerMethodName = "runTest0"
         ) {
             testClass<AbstractAtomicfuJvmIrTest> {
+                model("box/")
+            }
+
+            testClass<AbstractAtomicfuJvmFirLightTreeTest> {
                 model("box/")
             }
         }

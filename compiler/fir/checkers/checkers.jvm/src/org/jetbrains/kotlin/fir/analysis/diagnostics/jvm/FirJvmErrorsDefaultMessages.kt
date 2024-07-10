@@ -13,10 +13,10 @@ import org.jetbrains.kotlin.diagnostics.rendering.BaseDiagnosticRendererFactory
 import org.jetbrains.kotlin.diagnostics.rendering.CommonRenderers.NAME
 import org.jetbrains.kotlin.diagnostics.rendering.CommonRenderers.STRING
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.DECLARATION_NAME
-import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.FQ_NAMES_IN_TYPES
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.OPTIONAL_SENTENCE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.RENDER_TYPE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.SYMBOL
+import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.SYMBOL_WITH_CONTAINING_DECLARATION
 import org.jetbrains.kotlin.fir.analysis.diagnostics.formatKotlinWithVersion
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.ACCIDENTAL_OVERRIDE_CLASH_BY_JVM_SIGNATURE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.CONCURRENT_HASH_MAP_CONTAINS_OPERATOR
@@ -64,6 +64,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.LOCAL_JVM_
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.NON_DATA_CLASS_JVM_RECORD
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.NON_FINAL_JVM_RECORD
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.NON_SOURCE_REPEATED_ANNOTATION
+import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.NOT_YET_SUPPORTED_LOCAL_INLINE_FUNCTION
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.NO_REFLECTION_IN_CLASS_PATH
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.OVERLOADS_ABSTRACT
@@ -86,10 +87,12 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SPREAD_ON_
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.STRICTFP_ON_CLASS
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SUBCLASS_CANT_CALL_COMPANION_PROTECTED_NON_STATIC
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SUSPENSION_POINT_INSIDE_CRITICAL_SECTION
+import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNCHRONIZED_BLOCK_ON_VALUE_CLASS_OR_PRIMITIVE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNCHRONIZED_IN_INTERFACE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNCHRONIZED_ON_ABSTRACT
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNCHRONIZED_ON_INLINE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNCHRONIZED_ON_SUSPEND
+import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNCHRONIZED_ON_VALUE_CLASS
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.SYNTHETIC_PROPERTY_WITHOUT_JAVA_ORIGIN
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.TYPE_MISMATCH_WHEN_FLEXIBILITY_CHANGES
 import org.jetbrains.kotlin.fir.analysis.diagnostics.jvm.FirJvmErrors.UPPER_BOUND_CANNOT_BE_ARRAY
@@ -135,12 +138,14 @@ object FirJvmErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
 
         map.put(
             ACCIDENTAL_OVERRIDE_CLASH_BY_JVM_SIGNATURE,
-            "This function accidentally overrides both ''{0}'' and {1} ''{2}'' from JVM point of view because of mixed Java/Kotlin hierarchy.\n" +
+            "This function accidentally overrides both {0} and {1} {2} from JVM point of view because of mixed Java/Kotlin hierarchy.\n" +
                     "This situation provokes a JVM clash and thus is forbidden. To fix it, you have to delete either this function or one of overridden functions.",
-            FQ_NAMES_IN_TYPES,
+            SYMBOL_WITH_CONTAINING_DECLARATION,
             STRING,
-            FQ_NAMES_IN_TYPES,
+            SYMBOL_WITH_CONTAINING_DECLARATION,
         )
+
+        map.put(NOT_YET_SUPPORTED_LOCAL_INLINE_FUNCTION, "Local inline functions are not yet supported.")
 
         map.put(
             UPPER_BOUND_VIOLATED_BASED_ON_JAVA_ANNOTATIONS,
@@ -159,6 +164,8 @@ object FirJvmErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
         map.put(STRICTFP_ON_CLASS, "'@Strictfp' annotation on classes is not yet supported.")
         map.put(SYNCHRONIZED_ON_ABSTRACT, "'@Synchronized' annotation cannot be used on abstract functions.")
         map.put(SYNCHRONIZED_ON_INLINE, "'@Synchronized' annotation has no effect on inline functions.")
+        map.put(SYNCHRONIZED_ON_VALUE_CLASS, "'@Synchronized' annotation has no effect on value classes.")
+        map.put(SYNCHRONIZED_BLOCK_ON_VALUE_CLASS_OR_PRIMITIVE, "Synchronizing by ''{0}'' is forbidden", RENDER_TYPE)
         map.put(SYNCHRONIZED_ON_SUSPEND, "'@Synchronized' annotation is not applicable to 'suspend' functions and lambdas.")
         map.put(SYNCHRONIZED_IN_INTERFACE, "'@Synchronized' annotation cannot be used on interface members.")
         map.put(OVERLOADS_WITHOUT_DEFAULT_ARGUMENTS, "'@JvmOverloads' annotation has no effect for methods without default arguments.")

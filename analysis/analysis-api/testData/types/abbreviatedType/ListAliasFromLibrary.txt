@@ -1,6 +1,6 @@
 KaUsualClassType:
-  abbreviatedType: KaUsualClassType:
-    abbreviatedType: null
+  abbreviation: KaUsualClassType:
+    abbreviation: null
     annotations: []
     classId: library1/ListAlias
     nullability: NON_NULLABLE
@@ -10,8 +10,8 @@ KaUsualClassType:
         symbol: KaTypeAliasSymbol(library1/ListAlias)
         typeArguments: [
           KaUsualClassType:
-            abbreviatedType: KaUsualClassType:
-              abbreviatedType: null
+            abbreviation: KaUsualClassType:
+              abbreviation: null
               annotations: []
               classId: library1/StringAlias
               nullability: NON_NULLABLE
@@ -29,18 +29,18 @@ KaUsualClassType:
             qualifiers: [
               qualifier:
                 name: String
-                symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+                symbol: KaNamedClassSymbol(kotlin/String)
                 typeArguments: []
             ]
-            symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+            symbol: KaNamedClassSymbol(kotlin/String)
             typeArguments: []
         ]
     ]
     symbol: KaTypeAliasSymbol(library1/ListAlias)
     typeArguments: [
       KaUsualClassType:
-        abbreviatedType: KaUsualClassType:
-          abbreviatedType: null
+        abbreviation: KaUsualClassType:
+          abbreviation: null
           annotations: []
           classId: library1/StringAlias
           nullability: NON_NULLABLE
@@ -58,10 +58,10 @@ KaUsualClassType:
         qualifiers: [
           qualifier:
             name: String
-            symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+            symbol: KaNamedClassSymbol(kotlin/String)
             typeArguments: []
         ]
-        symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+        symbol: KaNamedClassSymbol(kotlin/String)
         typeArguments: []
     ]
   annotations: []
@@ -70,11 +70,11 @@ KaUsualClassType:
   qualifiers: [
     qualifier:
       name: List
-      symbol: KaNamedClassOrObjectSymbol(kotlin/collections/List)
+      symbol: KaNamedClassSymbol(kotlin/collections/List)
       typeArguments: [
         KaUsualClassType:
-          abbreviatedType: KaUsualClassType:
-            abbreviatedType: null
+          abbreviation: KaUsualClassType:
+            abbreviation: null
             annotations: []
             classId: library1/StringAlias
             nullability: NON_NULLABLE
@@ -92,18 +92,18 @@ KaUsualClassType:
           qualifiers: [
             qualifier:
               name: String
-              symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+              symbol: KaNamedClassSymbol(kotlin/String)
               typeArguments: []
           ]
-          symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+          symbol: KaNamedClassSymbol(kotlin/String)
           typeArguments: []
       ]
   ]
-  symbol: KaNamedClassOrObjectSymbol(kotlin/collections/List)
+  symbol: KaNamedClassSymbol(kotlin/collections/List)
   typeArguments: [
     KaUsualClassType:
-      abbreviatedType: KaUsualClassType:
-        abbreviatedType: null
+      abbreviation: KaUsualClassType:
+        abbreviation: null
         annotations: []
         classId: library1/StringAlias
         nullability: NON_NULLABLE
@@ -121,10 +121,10 @@ KaUsualClassType:
       qualifiers: [
         qualifier:
           name: String
-          symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+          symbol: KaNamedClassSymbol(kotlin/String)
           typeArguments: []
       ]
-      symbol: KaNamedClassOrObjectSymbol(kotlin/String)
+      symbol: KaNamedClassSymbol(kotlin/String)
       typeArguments: []
   ]
 

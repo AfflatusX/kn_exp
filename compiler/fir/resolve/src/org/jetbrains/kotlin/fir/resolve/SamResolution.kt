@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.fir.diagnostics.DiagnosticKind
 import org.jetbrains.kotlin.fir.extensions.extensionService
 import org.jetbrains.kotlin.fir.moduleData
 import org.jetbrains.kotlin.fir.resolve.calls.FirSyntheticFunctionSymbol
-import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.resolve.substitution.ConeSubstitutor
 import org.jetbrains.kotlin.fir.resolve.substitution.substitutorByMap
 import org.jetbrains.kotlin.fir.scopes.impl.FirFakeOverrideGenerator
@@ -108,7 +107,7 @@ class FirSamResolver(
     }
 
     private fun getFunctionTypeForPossibleSamType(type: ConeClassLikeType): ConeLookupTagBasedType? {
-        val firRegularClass = type.lookupTag.toFirRegularClass(session) ?: return null
+        val firRegularClass = type.lookupTag.toRegularClassSymbol(session)?.fir ?: return null
 
         val (_, unsubstitutedFunctionType) = resolveFunctionTypeIfSamInterface(firRegularClass) ?: return null
 
@@ -231,7 +230,7 @@ class FirSamResolver(
         val type =
             typeAliasSymbol.fir.expandedTypeRef.coneTypeUnsafe<ConeClassLikeType>().fullyExpandedType(session)
 
-        val expansionRegularClass = type.lookupTag.toSymbol(session)?.fir as? FirRegularClass ?: return null
+        val expansionRegularClass = type.lookupTag.toRegularClassSymbol(session)?.fir ?: return null
         val samConstructorForClass = getSamConstructor(expansionRegularClass) ?: return null
 
         // The constructor is something like `fun <T, ...> C(...): C<T, ...>`, meaning the type parameters
@@ -378,7 +377,7 @@ private fun FirRegularClass.computeSamCandidateNames(session: FirSession): Set<N
         // Note: we search only for names in this function, so substitution is not needed      V
         lookupSuperTypes(this, lookupInterfaces = true, deep = true, useSiteSession = session, substituteTypes = false)
             .mapNotNullTo(mutableListOf(this)) {
-                (session.symbolProvider.getSymbolByLookupTag(it.lookupTag) as? FirRegularClassSymbol)?.fir
+                (it.lookupTag.toRegularClassSymbol(session))?.fir
             }
 
     val samCandidateNames = mutableSetOf<Name>()

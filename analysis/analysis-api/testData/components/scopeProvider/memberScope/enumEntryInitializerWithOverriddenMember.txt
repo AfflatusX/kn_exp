@@ -3,8 +3,14 @@ KaKotlinPropertySymbol:
   backingFieldSymbol: KaBackingFieldSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Private
     contextReceivers: []
+    isActual: false
+    isExpect: false
     isExtension: false
+    isVal: true
+    location: PROPERTY
+    modality: FINAL
     name: field
     origin: PROPERTY_BACKING_FIELD
     owningProperty: KaKotlinPropertySymbol(<local>/foo)
@@ -13,24 +19,28 @@ KaKotlinPropertySymbol:
       annotations: []
       typeArguments: []
       type: kotlin/Int
-    symbolKind: LOCAL
-    typeParameters: []
+    visibility: PRIVATE
     getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
     getContainingJvmClassName: null
-    getContainingModule: KtSourceModule "Sources of main"
+    getContainingModule: KaSourceModule "Sources of main"
     deprecationStatus: null
   callableId: null
+  compilerVisibility: Public
   contextReceivers: []
   getter: KaPropertyGetterSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Public
     contextReceivers: []
     hasBody: false
     hasStableParameterNames: true
+    isActual: false
     isDefault: true
+    isExpect: false
     isExtension: false
     isInline: false
     isOverride: true
+    location: PROPERTY
     modality: OPEN
     origin: SOURCE
     receiverParameter: null
@@ -38,17 +48,15 @@ KaKotlinPropertySymbol:
       annotations: []
       typeArguments: []
       type: kotlin/Int
-    symbolKind: ACCESSOR
-    typeParameters: []
     valueParameters: []
-    visibility: Public
+    visibility: PUBLIC
     getDispatchReceiver(): KaUsualClassType:
       annotations: []
       typeArguments: []
       type: test/<anonymous>
     getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
     getContainingJvmClassName: null
-    getContainingModule: KtSourceModule "Sources of main"
+    getContainingModule: KaSourceModule "Sources of main"
     deprecationStatus: null
   hasBackingField: true
   hasGetter: true
@@ -64,6 +72,7 @@ KaKotlinPropertySymbol:
   isOverride: true
   isStatic: false
   isVal: true
+  location: CLASS
   modality: OPEN
   name: foo
   origin: SOURCE
@@ -73,25 +82,25 @@ KaKotlinPropertySymbol:
     typeArguments: []
     type: kotlin/Int
   setter: null
-  symbolKind: CLASS_MEMBER
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: test/<anonymous>
   getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
   getContainingJvmClassName: null
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
   getterDeprecationStatus: null
   javaGetterName: getFoo
   javaSetterName: null
   setterDeprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/Enum.clone
+  compilerVisibility: Protected
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -107,6 +116,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: clone
   origin: LIBRARY
@@ -115,10 +125,9 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Any
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Protected
+  visibility: PROTECTED
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -129,12 +138,13 @@ KaFunctionSymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: test/E.compareTo
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -150,6 +160,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: compareTo
   origin: SUBSTITUTION_OVERRIDE
@@ -158,20 +169,25 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Int
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: other
       origin: SUBSTITUTION_OVERRIDE
       receiverParameter: null
@@ -179,26 +195,26 @@ KaFunctionSymbol:
         annotations: []
         typeArguments: []
         type: test/E
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
       getContainingJvmClassName: test.E
-      getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+      getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: test/E
   getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
   getContainingJvmClassName: test.E
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/Enum.equals
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -214,6 +230,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: equals
   origin: LIBRARY
@@ -222,20 +239,25 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Boolean
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: other
       origin: LIBRARY
       receiverParameter: null
@@ -243,14 +265,13 @@ KaFunctionSymbol:
         annotations: []
         typeArguments: []
         type: kotlin/Any?
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: null
       getContainingJvmClassName: kotlin.Enum
-      getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+      getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -261,12 +282,13 @@ KaFunctionSymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/Enum.hashCode
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -282,6 +304,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: hashCode
   origin: LIBRARY
@@ -290,10 +313,9 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Int
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -304,12 +326,13 @@ KaFunctionSymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/Enum.toString
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -325,6 +348,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: OPEN
   name: toString
   origin: LIBRARY
@@ -333,10 +357,9 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/String
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -347,7 +370,7 @@ KaFunctionSymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
 
 KaKotlinPropertySymbol:
@@ -358,8 +381,14 @@ KaKotlinPropertySymbol:
   backingFieldSymbol: KaBackingFieldSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Public
     contextReceivers: []
+    isActual: false
+    isExpect: false
     isExtension: false
+    isVal: true
+    location: PROPERTY
+    modality: FINAL
     name: field
     origin: PROPERTY_BACKING_FIELD
     owningProperty: KaKotlinPropertySymbol(kotlin/Enum.name)
@@ -368,24 +397,28 @@ KaKotlinPropertySymbol:
       annotations: []
       typeArguments: []
       type: kotlin/String
-    symbolKind: LOCAL
-    typeParameters: []
+    visibility: PUBLIC
     getContainingFileSymbol: null
     getContainingJvmClassName: kotlin.Enum
-    getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+    getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
     deprecationStatus: null
   callableId: kotlin/Enum.name
+  compilerVisibility: Public
   contextReceivers: []
   getter: KaPropertyGetterSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Public
     contextReceivers: []
     hasBody: false
     hasStableParameterNames: true
+    isActual: false
     isDefault: true
+    isExpect: false
     isExtension: false
     isInline: false
     isOverride: false
+    location: PROPERTY
     modality: FINAL
     origin: LIBRARY
     receiverParameter: null
@@ -393,10 +426,8 @@ KaKotlinPropertySymbol:
       annotations: []
       typeArguments: []
       type: kotlin/String
-    symbolKind: ACCESSOR
-    typeParameters: []
     valueParameters: []
-    visibility: Public
+    visibility: PUBLIC
     getDispatchReceiver(): KaUsualClassType:
       annotations: []
       typeArguments: [
@@ -407,7 +438,7 @@ KaKotlinPropertySymbol:
       type: kotlin/Enum<E>
     getContainingFileSymbol: null
     getContainingJvmClassName: kotlin.Enum
-    getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+    getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
     deprecationStatus: null
   hasBackingField: true
   hasGetter: true
@@ -423,6 +454,7 @@ KaKotlinPropertySymbol:
   isOverride: false
   isStatic: false
   isVal: true
+  location: CLASS
   modality: FINAL
   name: name
   origin: LIBRARY
@@ -432,9 +464,8 @@ KaKotlinPropertySymbol:
     typeArguments: []
     type: kotlin/String
   setter: null
-  symbolKind: CLASS_MEMBER
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -445,7 +476,7 @@ KaKotlinPropertySymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
   getterDeprecationStatus: null
   javaGetterName: getName
@@ -457,8 +488,14 @@ KaKotlinPropertySymbol:
   backingFieldSymbol: KaBackingFieldSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Public
     contextReceivers: []
+    isActual: false
+    isExpect: false
     isExtension: false
+    isVal: true
+    location: PROPERTY
+    modality: FINAL
     name: field
     origin: PROPERTY_BACKING_FIELD
     owningProperty: KaKotlinPropertySymbol(kotlin/Enum.ordinal)
@@ -467,24 +504,28 @@ KaKotlinPropertySymbol:
       annotations: []
       typeArguments: []
       type: kotlin/Int
-    symbolKind: LOCAL
-    typeParameters: []
+    visibility: PUBLIC
     getContainingFileSymbol: null
     getContainingJvmClassName: kotlin.Enum
-    getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+    getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
     deprecationStatus: null
   callableId: kotlin/Enum.ordinal
+  compilerVisibility: Public
   contextReceivers: []
   getter: KaPropertyGetterSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Public
     contextReceivers: []
     hasBody: false
     hasStableParameterNames: true
+    isActual: false
     isDefault: true
+    isExpect: false
     isExtension: false
     isInline: false
     isOverride: false
+    location: PROPERTY
     modality: FINAL
     origin: LIBRARY
     receiverParameter: null
@@ -492,10 +533,8 @@ KaKotlinPropertySymbol:
       annotations: []
       typeArguments: []
       type: kotlin/Int
-    symbolKind: ACCESSOR
-    typeParameters: []
     valueParameters: []
-    visibility: Public
+    visibility: PUBLIC
     getDispatchReceiver(): KaUsualClassType:
       annotations: []
       typeArguments: [
@@ -506,7 +545,7 @@ KaKotlinPropertySymbol:
       type: kotlin/Enum<E>
     getContainingFileSymbol: null
     getContainingJvmClassName: kotlin.Enum
-    getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+    getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
     deprecationStatus: null
   hasBackingField: true
   hasGetter: true
@@ -522,6 +561,7 @@ KaKotlinPropertySymbol:
   isOverride: false
   isStatic: false
   isVal: true
+  location: CLASS
   modality: FINAL
   name: ordinal
   origin: LIBRARY
@@ -531,9 +571,8 @@ KaKotlinPropertySymbol:
     typeArguments: []
     type: kotlin/Int
   setter: null
-  symbolKind: CLASS_MEMBER
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -544,16 +583,17 @@ KaKotlinPropertySymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
   getterDeprecationStatus: null
   javaGetterName: getOrdinal
   javaSetterName: null
   setterDeprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: test/E.getDeclaringClass
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: false
@@ -569,6 +609,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: getDeclaringClass
   origin: SUBSTITUTION_OVERRIDE
@@ -576,22 +617,22 @@ KaFunctionSymbol:
   returnType: KaFlexibleType:
     annotations: []
     type: ft<java/lang/Class<test/E!>, java/lang/Class<test/E!>?>
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: test/E
   getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
   getContainingJvmClassName: test.E
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: kotlin/Enum.finalize
+  compilerVisibility: ProtectedAndPackage
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: false
@@ -607,6 +648,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: CLASS
   modality: FINAL
   name: finalize
   origin: JAVA_SOURCE
@@ -615,10 +657,9 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Unit
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: ProtectedAndPackage
+  visibility: PACKAGE_PROTECTED
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: [
@@ -629,14 +670,15 @@ KaFunctionSymbol:
     type: kotlin/Enum<E>
   getContainingFileSymbol: null
   getContainingJvmClassName: kotlin.Enum
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   deprecationStatus: null
 
-KaNamedClassOrObjectSymbol:
+KaNamedClassSymbol:
   annotations: []
   classId: kotlin/Enum.Companion
   classKind: COMPANION_OBJECT
   companionObject: null
+  compilerVisibility: Public
   contextReceivers: []
   isActual: false
   isData: false
@@ -645,6 +687,7 @@ KaNamedClassOrObjectSymbol:
   isFun: false
   isInline: false
   isInner: false
+  location: CLASS
   modality: FINAL
   name: Companion
   origin: LIBRARY
@@ -654,17 +697,17 @@ KaNamedClassOrObjectSymbol:
       typeArguments: []
       type: kotlin/Any
   ]
-  symbolKind: CLASS_MEMBER
   typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: null
-  getContainingModule: KtBinaryModule "Builtins for JVM (1.8)"
+  getContainingModule: KaBuiltinsModule "Builtins for JVM (1.8)"
   annotationApplicableTargets: null
   deprecationStatus: null
 
 KaConstructorSymbol:
   annotations: []
   callableId: null
+  compilerVisibility: Private
   containingClassId: null
   contextReceivers: []
   hasStableParameterNames: true
@@ -672,17 +715,18 @@ KaConstructorSymbol:
   isExpect: false
   isExtension: false
   isPrimary: true
+  location: CLASS
+  modality: FINAL
   origin: SOURCE_MEMBER_GENERATED
   receiverParameter: null
   returnType: KaUsualClassType:
     annotations: []
     typeArguments: []
     type: test/<anonymous>
-  symbolKind: CLASS_MEMBER
   typeParameters: []
   valueParameters: []
-  visibility: Private
+  visibility: PRIVATE
   getContainingFileSymbol: KaFileSymbol(enumEntryInitializerWithOverriddenMember.kt)
   getContainingJvmClassName: null
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

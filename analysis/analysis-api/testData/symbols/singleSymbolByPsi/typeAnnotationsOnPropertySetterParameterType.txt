@@ -1,26 +1,36 @@
 KaPropertySetterSymbol:
   annotations: []
   callableId: null
+  compilerVisibility: Public
   contextReceivers: []
   hasBody: true
   hasStableParameterNames: true
+  isActual: false
   isDefault: false
+  isExpect: false
   isExtension: false
   isInline: false
   isOverride: false
+  location: PROPERTY
   modality: FINAL
   origin: SOURCE
   parameter: KaValueParameterSymbol:
     annotations: []
     callableId: null
+    compilerVisibility: Public
     contextReceivers: []
     generatedPrimaryConstructorProperty: null
     hasDefaultValue: false
+    isActual: false
     isCrossinline: false
+    isExpect: false
     isExtension: false
     isImplicitLambdaParameter: false
     isNoinline: false
+    isVal: true
     isVararg: false
+    location: LOCAL
+    modality: FINAL
     name: value
     origin: SOURCE
     receiverParameter: null
@@ -35,31 +45,34 @@ KaPropertySetterSymbol:
       ]
       typeArguments: []
       type: @R|Anno1|()  @R|Anno2|()  @R|Anno3|()  {@R|Anno3|()  SecondTypeAlias=} BaseInterface
-    symbolKind: LOCAL
-    typeParameters: []
+    visibility: PUBLIC
     getContainingFileSymbol: KaFileSymbol(typeAnnotationsOnPropertySetterParameterType.kt)
     getContainingJvmClassName: null
-    getContainingModule: KtSourceModule "Sources of main"
+    getContainingModule: KaSourceModule "Sources of main"
     deprecationStatus: null
   receiverParameter: null
   returnType: KaUsualClassType:
     annotations: []
     typeArguments: []
     type: kotlin/Unit
-  symbolKind: ACCESSOR
-  typeParameters: []
   valueParameters: [
     KaValueParameterSymbol:
       annotations: []
       callableId: null
+      compilerVisibility: Public
       contextReceivers: []
       generatedPrimaryConstructorProperty: null
       hasDefaultValue: false
+      isActual: false
       isCrossinline: false
+      isExpect: false
       isExtension: false
       isImplicitLambdaParameter: false
       isNoinline: false
+      isVal: true
       isVararg: false
+      location: LOCAL
+      modality: FINAL
       name: value
       origin: SOURCE
       receiverParameter: null
@@ -74,15 +87,14 @@ KaPropertySetterSymbol:
         ]
         typeArguments: []
         type: @R|Anno1|()  @R|Anno2|()  @R|Anno3|()  {@R|Anno3|()  SecondTypeAlias=} BaseInterface
-      symbolKind: LOCAL
-      typeParameters: []
+      visibility: PUBLIC
       getContainingFileSymbol: KaFileSymbol(typeAnnotationsOnPropertySetterParameterType.kt)
       getContainingJvmClassName: null
-      getContainingModule: KtSourceModule "Sources of main"
+      getContainingModule: KaSourceModule "Sources of main"
       deprecationStatus: null
   ]
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(typeAnnotationsOnPropertySetterParameterType.kt)
   getContainingJvmClassName: TypeAnnotationsOnPropertySetterParameterTypeKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

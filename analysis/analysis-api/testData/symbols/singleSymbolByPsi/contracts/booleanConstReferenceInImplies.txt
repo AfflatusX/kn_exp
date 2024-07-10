@@ -1,9 +1,10 @@
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: [
     kotlin/OptIn(markerClass = [kotlin.contracts.ExperimentalContracts::class])
       psi: KtAnnotationEntry
   ]
   callableId: /booleanConstReferenceInImplies
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: [
     KaContractConditionalContractEffectDeclaration:
@@ -29,6 +30,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: booleanConstReferenceInImplies
   origin: SOURCE
@@ -37,11 +39,10 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Boolean
-  symbolKind: TOP_LEVEL
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(booleanConstReferenceInImplies.kt)
   getContainingJvmClassName: BooleanConstReferenceInImpliesKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

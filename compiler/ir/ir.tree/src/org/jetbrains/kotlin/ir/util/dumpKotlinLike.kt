@@ -63,10 +63,11 @@ data class KotlinLikeDumpOptions(
     val labelPrintingStrategy: LabelPrintingStrategy = LabelPrintingStrategy.NEVER,
     val printFakeOverridesStrategy: FakeOverridesStrategy = FakeOverridesStrategy.ALL,
     val bodyPrintingStrategy: BodyPrintingStrategy = BodyPrintingStrategy.PRINT_BODIES,
-    val printElseAsTrue: Boolean = false,
+    val inferElseBranches: Boolean = false,
     val printUnitReturnType: Boolean = false,
     val stableOrder: Boolean = false,
     val normalizeNames: Boolean = false,
+    val printExpectDeclarations: Boolean = true,
     /*
     TODO add more options:
      always print visibility?
@@ -107,7 +108,7 @@ interface CustomKotlinLikeDumpStrategy {
 
     fun shouldPrintAnnotation(annotation: IrConstructorCall, container: IrAnnotationContainer): Boolean = true
 
-    fun willPrintElement(element: IrElement, container: IrDeclaration?, printer: Printer): Boolean = true
+    fun willPrintElement(element: IrElement, container: IrDeclaration?, printer: Printer, options: KotlinLikeDumpOptions): Boolean = true
 
     fun didPrintElement(element: IrElement, container: IrDeclaration?, printer: Printer) {}
 
@@ -169,6 +170,7 @@ interface CustomKotlinLikeDumpStrategy {
 
 private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOptions) : IrElementVisitor<Unit, IrDeclaration?> {
     private val variableNameData = VariableNameData(options.normalizeNames)
+    private var currentWhenStmt: IrWhen? = null
 
     private val IrSymbol.safeName
         get() = if (!isBound) {
@@ -232,7 +234,7 @@ private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOption
     }
 
     private inline fun wrap(element: IrElement, container: IrDeclaration?, block: () -> Unit) {
-        if (!options.customDumpStrategy.willPrintElement(element, container, p)) return
+        if (!options.customDumpStrategy.willPrintElement(element, container, p, options)) return
         try {
             block()
         } finally {
@@ -279,6 +281,7 @@ private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOption
         // TODO omit Companion name for companion objects?
         // TODO do we need to print info about `thisReceiver`?
         // TODO special support for objects?
+        if (declaration.isExpect && !options.printExpectDeclarations) return
 
         declaration.printlnAnnotations()
         p.printIndent()
@@ -602,6 +605,7 @@ private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOption
     }
 
     override fun visitSimpleFunction(declaration: IrSimpleFunction, data: IrDeclaration?) {
+        if (declaration.isExpect && !options.printExpectDeclarations) return
         declaration.printSimpleFunction(
             data,
             "fun ",
@@ -1382,7 +1386,10 @@ private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOption
         p.printlnWithNoIndent("when {")
         p.pushIndent()
 
+        val savedWhenStmt = currentWhenStmt
+        currentWhenStmt = expression
         expression.branches.forEach { it.accept(this, data) }
+        currentWhenStmt = savedWhenStmt
 
         p.popIndent()
         p.print("}")
@@ -1390,7 +1397,14 @@ private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOption
 
     override fun visitBranch(branch: IrBranch, data: IrDeclaration?) = wrap(branch, data) {
         p.printIndent()
-        branch.condition.accept(this, data)
+        branch.condition.let {
+            // Deserialized IR contains no IrElseBranch nodes. They are represented with IrBranch(condition=true)
+            // To match Kotlin-like IR dump before serialization, the following logic tried to infer IR node which was before serialization
+            if (options.inferElseBranches && it is IrConst<*> && it.value == true && branch == currentWhenStmt?.branches?.last())
+                p.printWithNoIndent("else")
+            else
+                it.accept(this, data)
+        }
         p.printWithNoIndent(" -> ")
         branch.result.accept(this, data)
         p.println()
@@ -1399,7 +1413,7 @@ private class KotlinLikeDumper(val p: Printer, val options: KotlinLikeDumpOption
     override fun visitElseBranch(branch: IrElseBranch, data: IrDeclaration?) = wrap(branch, data) {
         p.printIndent()
         if ((branch.condition as? IrConst<*>)?.value == true) {
-            p.printWithNoIndent(if (options.printElseAsTrue) "true" else "else")
+            p.printWithNoIndent("else")
         } else {
             p.printWithNoIndent("/* else */ ")
             branch.condition.accept(this, data)

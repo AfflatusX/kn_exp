@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.analysis.api.impl.base.test.cases.components.compileTimeConstantProvider
 
 import org.jetbrains.kotlin.analysis.test.framework.base.AbstractAnalysisApiBasedTest
-import org.jetbrains.kotlin.analysis.test.framework.project.structure.KtTestModule
+import org.jetbrains.kotlin.analysis.test.framework.projectStructure.KtTestModule
 import org.jetbrains.kotlin.analysis.test.framework.services.expressionMarkerProvider
 import org.jetbrains.kotlin.analysis.test.framework.utils.executeOnPooledThreadInReadAction
 import org.jetbrains.kotlin.psi.KtExpression
@@ -30,7 +30,9 @@ abstract class AbstractCompileTimeConstantEvaluatorTest : AbstractAnalysisApiBas
         }
         val actual = buildString {
             appendLine("expression: ${expression.text}")
-            appendLine("constant: ${constantValue?.renderAsKotlinConstant() ?: "NOT_EVALUATED"}")
+            appendLine("constant: ${constantValue?.render() ?: "NOT_EVALUATED"}")
+
+            @Suppress("DEPRECATION")
             appendLine("constantValueKind: ${constantValue?.constantValueKind ?: "NOT_EVALUATED"}")
         }
         testServices.assertions.assertEqualsToTestDataFileSibling(actual)

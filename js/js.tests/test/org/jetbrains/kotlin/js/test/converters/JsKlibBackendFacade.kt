@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.library.KotlinAbiVersion
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.test.backend.ir.IrBackendFacade
 import org.jetbrains.kotlin.test.backend.ir.IrBackendInput
+import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.SKIP_DESERIALIZED_IR_TEXT_DUMP
 import org.jetbrains.kotlin.test.frontend.classic.moduleDescriptorProvider
 import org.jetbrains.kotlin.test.model.ArtifactKinds
 import org.jetbrains.kotlin.test.model.BinaryArtifacts
@@ -36,12 +37,12 @@ class JsKlibBackendFacade(
     constructor(testServices: TestServices) : this(testServices, firstTimeCompilation = true)
 
     override fun shouldRunAnalysis(module: TestModule): Boolean {
-        return module.backendKind == inputKind
+        return module.backendKind == inputKind && SKIP_DESERIALIZED_IR_TEXT_DUMP !in module.directives
     }
 
     override fun transform(module: TestModule, inputArtifact: IrBackendInput): BinaryArtifacts.KLib {
-        require(inputArtifact is IrBackendInput.JsIrBackendInput) {
-            "JsKlibBackendFacade expects IrBackendInput.JsIrBackendInput as input"
+        require(inputArtifact is IrBackendInput.JsIrAfterFrontendBackendInput) {
+            "JsKlibBackendFacade expects IrBackendInput.JsIrAfterFrontendBackendInput as input"
         }
 
         val configuration = testServices.compilerConfigurationProvider.getCompilerConfiguration(module)

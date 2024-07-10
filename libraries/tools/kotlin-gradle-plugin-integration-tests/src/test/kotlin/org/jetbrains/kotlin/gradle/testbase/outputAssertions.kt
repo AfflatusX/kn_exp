@@ -38,30 +38,6 @@ fun BuildResult.assertOutputContainsAny(
 }
 
 /**
- * Asserts Gradle output contains [expectedSubString] string exact times.
- */
-fun BuildResult.assertOutputContainsExactTimes(
-    expectedSubString: String,
-    expectedRepetitionTimes: Int = 1,
-) {
-    var currentOffset = 0
-    var count = 0
-    var nextIndex = output.indexOf(expectedSubString, currentOffset)
-
-    while (nextIndex != -1 && count < expectedRepetitionTimes + 1) {
-        count++
-        currentOffset = nextIndex + expectedSubString.length
-        nextIndex = output.indexOf(expectedSubString, currentOffset)
-    }
-
-    assert(count == expectedRepetitionTimes) {
-        printBuildOutput()
-        "Build output contains \"$expectedSubString\" $count times"
-    }
-}
-
-
-/**
  * Asserts Gradle output does not contain [notExpectedSubString] string.
  *
  * @param wrappingCharsCount amount of chars to include before and after [notExpectedSubString] occurrence
@@ -312,6 +288,14 @@ fun BuildResult.extractTaskCompilerArguments(
     }.substringAfter("Kotlin compiler args:")
 }
 
+fun BuildResult.extractNativeCompilerTaskArguments(
+    taskPath: String
+): String {
+    val taskOutput = getOutputForTask(taskPath, LogLevel.INFO)
+    return taskOutput.substringAfter("Arguments = [\n").substringBefore("]\n")
+}
+
+
 fun BuildResult.assertNoCompilerArgument(
     taskPath: String,
     notExpectedArgument: String,
@@ -387,7 +371,7 @@ fun CommandLineArguments.assertCommandLineArgumentsContainSequentially(
     expectedArgs.forEach {
         assert(expectedArgs.isNotEmpty() && Collections.indexOfSubList(args, expectedArgs.toList()) != -1) {
             this.buildResult.printBuildOutput()
-            "There is no sequential arguments ${it} in actual command line arguments are: ${args}"
+            "There is no sequential arguments $it in actual command line arguments are: $args"
         }
     }
 }
@@ -444,4 +428,3 @@ private fun BuildResult.extractNativeCustomEnvironment(taskPath: String, toolNam
         val (key, value) = it.split("=")
         key.trim() to value.trim()
     }.toMap()
-

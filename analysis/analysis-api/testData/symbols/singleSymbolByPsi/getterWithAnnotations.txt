@@ -6,13 +6,17 @@ KaPropertyGetterSymbol:
       psi: KtAnnotationEntry
   ]
   callableId: null
+  compilerVisibility: Public
   contextReceivers: []
   hasBody: true
   hasStableParameterNames: true
+  isActual: false
   isDefault: false
+  isExpect: false
   isExtension: false
   isInline: false
   isOverride: false
+  location: PROPERTY
   modality: FINAL
   origin: SOURCE
   receiverParameter: null
@@ -20,11 +24,9 @@ KaPropertyGetterSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Int
-  symbolKind: ACCESSOR
-  typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(getterWithAnnotations.kt)
   getContainingJvmClassName: GetterWithAnnotationsKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

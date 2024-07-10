@@ -177,6 +177,12 @@ object CodegenTestDirectives : SimpleDirectivesContainer() {
         description = "Ignores failures of signature dump comparison for tests with the $DUMP_SIGNATURES directive if the test uses the K2 frontend and the specified backend."
     )
 
+    val SKIP_DESERIALIZED_IR_TEXT_DUMP by directive(
+        description = """
+        Skips ${IrTextDumpHandler::class}, when running a test against the deserialized IR
+        """
+    )
+
     val DUMP_IR_FOR_GIVEN_PHASES by valueDirective<AnyNamedPhase>(
         description = "Dumps backend IR after given lowerings (enables ${PhasedIrDumpHandler::class})",
         parser = { error("Cannot parse value $it for \"DUMP_IR_FOR_GIVEN_PHASES\" directive. All arguments must be specified via code in test system") }
@@ -257,6 +263,18 @@ object CodegenTestDirectives : SimpleDirectivesContainer() {
 
     val DISABLE_IR_VISIBILITY_CHECKS by enumDirective<TargetBackend>(
         description = "Don't check for visibility violations when validating IR on the target backend"
+    )
+
+    val ENABLE_IR_VISIBILITY_CHECKS_AFTER_INLINING by directive(
+        description = """
+        Check for visibility violation when validating IR after inlining.
+        Equivalent to passing the '-Xverify-ir-visibility-after-inlining' CLI flag.
+        
+        This directive is opt-in rather than opt-out (like $DISABLE_IR_VISIBILITY_CHECKS) because right now most test pass with
+        visibility checks enabled before lowering, but enabling these checks after inlining by default will cause most tests to fail,
+        because some lowerings that are run before inlining generate calls to internal intrinsics (KT-67304), and inlining in general may
+        cause visibility violations until we start generating synthetic accessors (KT-64865).
+        """.trimIndent()
     )
 }
 

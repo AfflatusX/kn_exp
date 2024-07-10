@@ -1,10 +1,14 @@
 KaJavaFieldSymbol:
   annotations: []
   callableId: /JavaClass.field
+  compilerVisibility: Public
   contextReceivers: []
+  isActual: false
+  isExpect: false
   isExtension: false
   isStatic: false
   isVal: false
+  location: CLASS
   modality: OPEN
   name: field
   origin: JAVA_SOURCE
@@ -13,14 +17,12 @@ KaJavaFieldSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Int
-  symbolKind: CLASS_MEMBER
-  typeParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getDispatchReceiver(): KaUsualClassType:
     annotations: []
     typeArguments: []
     type: JavaClass
   getContainingFileSymbol: null
   getContainingJvmClassName: JavaClass
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

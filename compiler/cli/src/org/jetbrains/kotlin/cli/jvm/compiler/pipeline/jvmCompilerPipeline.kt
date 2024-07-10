@@ -185,7 +185,7 @@ fun convertAnalyzedFirToIr(
 fun FirResult.convertToIrAndActualizeForJvm(
     fir2IrExtensions: Fir2IrExtensions,
     configuration: CompilerConfiguration,
-    diagnosticsReporter: DiagnosticReporter,
+    diagnosticsReporter: BaseDiagnosticsCollector,
     irGeneratorExtensions: Collection<IrGenerationExtension>,
 ): Fir2IrActualizedResult {
     val performanceManager = configuration[CLIConfigurationKeys.PERF_MANAGER]
@@ -198,7 +198,6 @@ fun FirResult.convertToIrAndActualizeForJvm(
         fir2IrConfiguration,
         irGeneratorExtensions,
         JvmIrMangler,
-        FirJvmKotlinMangler,
         FirJvmVisibilityConverter,
         DefaultBuiltIns.Instance,
         ::JvmIrTypeSystemContext,

@@ -1,9 +1,14 @@
 KaLocalVariableSymbol:
   annotations: []
   callableId: null
+  compilerVisibility: Local
   contextReceivers: []
+  isActual: false
+  isExpect: false
   isExtension: false
   isVal: true
+  location: LOCAL
+  modality: FINAL
   name: loopVariable
   origin: SOURCE
   receiverParameter: null
@@ -11,16 +16,16 @@ KaLocalVariableSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Int
-  symbolKind: LOCAL
-  typeParameters: []
+  visibility: LOCAL
   getContainingFileSymbol: KaFileSymbol(forLoopVariable.kt)
   getContainingJvmClassName: null
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null
 
-KaFunctionSymbol:
+KaNamedFunctionSymbol:
   annotations: []
   callableId: /usage
+  compilerVisibility: Public
   contextReceivers: []
   contractEffects: []
   hasStableParameterNames: true
@@ -36,6 +41,7 @@ KaFunctionSymbol:
   isStatic: false
   isSuspend: false
   isTailRec: false
+  location: TOP_LEVEL
   modality: FINAL
   name: usage
   origin: SOURCE
@@ -44,11 +50,10 @@ KaFunctionSymbol:
     annotations: []
     typeArguments: []
     type: kotlin/Unit
-  symbolKind: TOP_LEVEL
   typeParameters: []
   valueParameters: []
-  visibility: Public
+  visibility: PUBLIC
   getContainingFileSymbol: KaFileSymbol(forLoopVariable.kt)
   getContainingJvmClassName: ForLoopVariableKt
-  getContainingModule: KtSourceModule "Sources of main"
+  getContainingModule: KaSourceModule "Sources of main"
   deprecationStatus: null

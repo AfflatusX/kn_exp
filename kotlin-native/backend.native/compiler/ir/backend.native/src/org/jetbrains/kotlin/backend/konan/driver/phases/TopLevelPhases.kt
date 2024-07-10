@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.backend.konan.driver.utilities.createTempFiles
 import org.jetbrains.kotlin.backend.konan.ir.konanLibrary
 import org.jetbrains.kotlin.cli.common.CommonCompilerPerformanceManager
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.config.KlibConfigurationKeys
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -22,7 +23,10 @@ import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.konan.TempFiles
 import org.jetbrains.kotlin.konan.file.File
-import org.jetbrains.kotlin.konan.target.*
+import org.jetbrains.kotlin.konan.target.CompilerOutputKind
+import org.jetbrains.kotlin.konan.target.Family
+import org.jetbrains.kotlin.konan.target.LinkerOutputKind
+import org.jetbrains.kotlin.konan.target.ZephyrConfigurables
 import org.jetbrains.kotlin.library.impl.javaFile
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -318,18 +322,20 @@ internal fun <C : PhaseContext> PhaseEngine<C>.compileAndLink(
             listOf(linkerInput.canonicalPath),
             moduleCompilationOutput.dependenciesTrackingResult,
             outputFiles,
+            temporaryFiles,
             cacheBinaries,
     )
 
     val configurables = context.config.platform.configurables;
-    if (configurables is ZephyrConfigurables || configurables.target == KonanTarget.LINUX_X64) {
+    if (configurables is ZephyrConfigurables) {
         println("skipping linker phase since zephyr platform will link through west.");
         println("original input files: ${listOf(linkerInput.canonicalPath)}")
         val linker = Linker(
                 config = context.config,
                 // linker only supports executable?
                 linkerOutput = LinkerOutputKind.EXECUTABLE,
-                outputFiles = linkerPhaseInput.outputFiles
+                outputFiles = linkerPhaseInput.outputFiles,
+                tempFiles = temporaryFiles,
         )
         val commands = linker.linkCommands(
                 linkerPhaseInput.outputFile,
@@ -363,8 +369,23 @@ internal fun PhaseEngine<NativeGenerationState>.lowerModuleWithDependencies(modu
     // (like IR visibility checks).
     // This is what we call a 'lowering synchronization point'.
     runIrValidationPhase(validateIrBeforeLowering, allModulesToLower)
-    runLowerings(getLoweringsUpToAndIncludingInlining(), allModulesToLower)
-    runIrValidationPhase(validateIrAfterInlining, allModulesToLower)
+    run {
+        // This is a so-called "KLIB Common Lowerings Prefix".
+        //
+        // Note: All lowerings up to but excluding "InlineAllFunctions" are supposed to modify only the lowered file.
+        // By contrast, "InlineAllFunctions" may mutate multiple files at the same time, and some files can be even
+        // mutated several times by little pieces. Which is a completely different behavior as compared to other lowerings.
+        // "InlineAllFunctions" expects that for an inlined function all preceding lowerings (including generation of
+        // synthetic accessors) have been already applied.
+        // To avoid overcomplicating things and to keep running the preceding lowerings with "modify-only-lowered-file"
+        // invariant, we would like to put a synchronization point immediately before "InlineAllFunctions".
+        runLowerings(getLoweringsUpToAndIncludingSyntheticAccessors(), allModulesToLower)
+        if (context.config.configuration.getBoolean(KlibConfigurationKeys.EXPERIMENTAL_DOUBLE_INLINING)) {
+            runIrValidationPhase(validateIrAfterInliningOnlyPrivateFunctions, allModulesToLower)
+        }
+        runLowerings(listOf(inlineAllFunctionsPhase), allModulesToLower)
+    }
+    runIrValidationPhase(validateIrAfterInliningAllFunctions, allModulesToLower)
     runLowerings(getLoweringsAfterInlining(), allModulesToLower)
     runIrValidationPhase(validateIrAfterLowering, allModulesToLower)
 
