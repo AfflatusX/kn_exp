@@ -10,7 +10,10 @@ import llvm.*
 import org.jetbrains.kotlin.backend.common.LoggingContext
 import org.jetbrains.kotlin.backend.common.reportCompilationWarning
 import org.jetbrains.kotlin.backend.konan.driver.PhaseContext
-import org.jetbrains.kotlin.backend.konan.llvm.*
+import org.jetbrains.kotlin.backend.konan.llvm.LlvmFunctionAttribute
+import org.jetbrains.kotlin.backend.konan.llvm.addLlvmFunctionEnumAttribute
+import org.jetbrains.kotlin.backend.konan.llvm.getFunctions
+import org.jetbrains.kotlin.backend.konan.llvm.makeVisibilityHiddenLikeLlvmInternalizePass
 import org.jetbrains.kotlin.konan.target.*
 import java.io.Closeable
 
@@ -126,6 +129,7 @@ internal fun createLTOFinalPipelineConfig(
     }
     // TODO(KT-66501): investigate, why sizeLevel is essentially === to NONE (and inline it if it's OK)
     val sizeLevel: LlvmSizeLevel = when {
+        configurables is ZephyrConfigurables -> LlvmSizeLevel.AGGRESSIVE
         // We try to optimize code as much as possible on embedded targets.
         context.shouldOptimize() -> LlvmSizeLevel.NONE
         context.shouldContainDebugInfo() -> LlvmSizeLevel.NONE
