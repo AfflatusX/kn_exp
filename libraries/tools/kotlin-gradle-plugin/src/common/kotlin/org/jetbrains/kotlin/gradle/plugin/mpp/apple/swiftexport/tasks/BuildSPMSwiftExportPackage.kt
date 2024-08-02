@@ -15,6 +15,8 @@ import org.gradle.work.DisableCachingByDefault
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.LibraryTools
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.appleArchitecture
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.applePlatform
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.appleTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.genericPlatformDestination
 import org.jetbrains.kotlin.gradle.utils.*
 import org.jetbrains.kotlin.gradle.utils.getFile
 import org.jetbrains.kotlin.gradle.utils.relativeOrAbsolute
@@ -98,13 +100,20 @@ internal abstract class BuildSPMSwiftExportPackage @Inject constructor(
             "BUILT_PRODUCTS_DIR" to interfacesPath.getFile().canonicalPath,
         )
 
+        val scheme = swiftApiModuleName.get()
+
         val buildArguments = mapOf(
             "ARCHS" to target.map { it.appleArchitecture }.get(),
             "CONFIGURATION" to configuration.get(),
+            /*
+            We need to add -public-autolink-library flag because bridge module is imported with @_implementationOnly
+            All object files will be merged in `lib${swiftApiModuleName}.a`
+            More information can be found here: https://github.com/swiftlang/swift/pull/35936
+             */
+            "OTHER_SWIFT_FLAGS" to "-Xfrontend -public-autolink-library -Xfrontend $scheme"
         )
 
         val derivedData = packageDerivedData.getFile()
-        val scheme = swiftApiModuleName.get()
 
         val command = listOf(
             "xcodebuild",
@@ -139,7 +148,6 @@ internal abstract class BuildSPMSwiftExportPackage @Inject constructor(
         val deviceId = targetDeviceIdentifier.orNull
         if (deviceId != null) return "id=$deviceId"
 
-        val platformName = target.map { it.applePlatform }.get()
-        return "generic/platform=$platformName"
+        return target.get().appleTarget.genericPlatformDestination
     }
 }

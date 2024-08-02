@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.backend.konan.lower.*
 import org.jetbrains.kotlin.backend.konan.lower.InitializersLowering
 import org.jetbrains.kotlin.backend.konan.optimizations.NativeForLoopsLowering
 import org.jetbrains.kotlin.config.KlibConfigurationKeys
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -34,6 +33,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrSuspensionPoint
+import org.jetbrains.kotlin.ir.inline.DumpSyntheticAccessors
 import org.jetbrains.kotlin.ir.inline.SyntheticAccessorLowering
 import org.jetbrains.kotlin.ir.inline.isConsideredAsPrivateForInlining
 import org.jetbrains.kotlin.ir.interpreter.IrInterpreterConfiguration
@@ -53,7 +53,7 @@ internal fun PhaseEngine<NativeGenerationState>.runLowerings(lowerings: Lowering
     }
 }
 
-internal fun PhaseEngine<NativeGenerationState>.runIrValidationPhase(
+internal fun PhaseEngine<NativeGenerationState>.runModuleWisePhase(
         lowering: SimpleNamedCompilerPhase<NativeGenerationState, IrModuleFragment, Unit>,
         modules: List<IrModuleFragment>
 ) {
@@ -77,18 +77,16 @@ internal val validateIrAfterInliningOnlyPrivateFunctions = createSimpleNamedComp
                     checkInlineFunctionCallSites = { inlineFunctionUseSite ->
                         // Call sites of only non-private functions are allowed at this stage.
                         val inlineFunction = inlineFunctionUseSite.symbol.owner
-                        when {
-                            // TODO: remove this condition after the fix of KT-69470:
-                            inlineFunctionUseSite is IrFunctionReference &&
-                                    inlineFunction.visibility == DescriptorVisibilities.LOCAL -> true // temporarily permitted
-
-                            inlineFunction.isConsideredAsPrivateForInlining() -> false // forbidden
-
-                            else -> true // permitted
-                        }
+                        !inlineFunction.isConsideredAsPrivateForInlining()
                     }
             ).lower(module)
         }
+)
+
+internal val dumpSyntheticAccessorsPhase = createSimpleNamedCompilerPhase<NativeGenerationState, IrModuleFragment>(
+        name = "DumpSyntheticAccessorsPhase",
+        description = "Dump synthetic accessors and their call sites (used only for testing and debugging)",
+        op = { context, module -> DumpSyntheticAccessors(context.context).lower(module) },
 )
 
 internal val validateIrAfterInliningAllFunctions = createSimpleNamedCompilerPhase<NativeGenerationState, IrModuleFragment>(
@@ -150,10 +148,17 @@ private val lowerBeforeInlinePhase = createFileLoweringPhase(
         description = "Special operations processing before inlining"
 )
 
+private val inlineCallableReferenceToLambdaPhase = createFileLoweringPhase(
+        lowering = { context: NativeGenerationState -> NativeInlineCallableReferenceToLambdaPhase(context) },
+        name = "NativeInlineCallableReferenceToLambdaPhase",
+        description = "Transform all callable reference (including defaults) to inline lambdas, mark inline lambdas for later passes"
+)
+
 private val arrayConstructorPhase = createFileLoweringPhase(
         ::ArrayConstructorLowering,
         name = "ArrayConstructor",
-        description = "Transform `Array(size) { index -> value }` into a loop"
+        description = "Transform `Array(size) { index -> value }` into a loop",
+        prerequisite = setOf(inlineCallableReferenceToLambdaPhase)
 )
 
 private val lateinitPhase = createFileLoweringPhase(
@@ -209,12 +214,6 @@ private val wrapInlineDeclarationsWithReifiedTypeParametersLowering = createFile
         ::WrapInlineDeclarationsWithReifiedTypeParametersLowering,
         name = "WrapInlineDeclarationsWithReifiedTypeParameters",
         description = "Wrap inline declarations with reified type parameters"
-)
-
-private val inlineCallableReferenceToLambdaPhase = createFileLoweringPhase(
-        lowering = { context: NativeGenerationState -> NativeInlineCallableReferenceToLambdaPhase(context) },
-        name = "NativeInlineCallableReferenceToLambdaPhase",
-        description = "Transform all callable reference (including defaults) to inline lambdas, mark inline lambdas for later passes"
 )
 
 private val postInlinePhase = createFileLoweringPhase(

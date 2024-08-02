@@ -70,6 +70,7 @@ val commonTestOptIns = listOf(
     "kotlin.ExperimentalUnsignedTypes",
     "kotlin.ExperimentalStdlibApi",
     "kotlin.io.encoding.ExperimentalEncodingApi",
+    "kotlin.uuid.ExperimentalUuidApi",
 )
 
 kotlin {
@@ -107,7 +108,13 @@ kotlin {
             val compileOnlyDeclarations by creating {
                 compileTaskProvider.configure {
                     compilerOptions {
-                        freeCompilerArgs.set(listOfNotNull("-Xallow-kotlin-package", diagnosticNamesArg))
+                        freeCompilerArgs.set(
+                            listOfNotNull(
+                                "-Xallow-kotlin-package",
+                                "-Xsuppress-missing-builtins-error",
+                                diagnosticNamesArg
+                            )
+                        )
                     }
                 }
             }
@@ -202,14 +209,6 @@ kotlin {
                                 "-Xexpect-actual-classes",
                             )
                         )
-                        if (kotlinBuildProperties.useFir) {
-                            freeCompilerArgs.add("-Xuse-k2")
-                        }
-                        // This is needed for JavaTypeTest; typeOf for non-reified type parameters doesn't work otherwise, for implementation reasons.
-                        val currentFreeArgs = freeCompilerArgs.get()
-                        freeCompilerArgs
-                            .value(currentFreeArgs.filter { it != "-Xno-optimized-callable-references" })
-                            .finalizeValue()
                     }
                 }
             }

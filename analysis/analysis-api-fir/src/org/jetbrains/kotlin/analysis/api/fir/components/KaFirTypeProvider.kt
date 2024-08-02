@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.analysis.api.impl.base.components.KaSessionComponent
 import org.jetbrains.kotlin.analysis.api.lifetime.withValidityAssertion
 import org.jetbrains.kotlin.analysis.api.symbols.KaCallableSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaNamedClassSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaReceiverParameterSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.api.types.KaTypeNullability
 import org.jetbrains.kotlin.analysis.low.level.api.fir.api.getOrBuildFir
@@ -288,7 +289,7 @@ internal class KaFirTypeProvider(
             is FirAnonymousObjectSymbol -> symbol.resolvedSuperTypes
             is FirRegularClassSymbol -> symbol.resolvedSuperTypes
             is FirTypeAliasSymbol -> symbol.fullyExpandedClass(session)?.resolvedSuperTypes ?: return emptySequence()
-            is FirTypeParameterSymbol -> symbol.resolvedBounds.map { it.type }
+            is FirTypeParameterSymbol -> symbol.resolvedBounds.map { it.coneType }
             else -> return emptySequence()
         }
 
@@ -296,10 +297,9 @@ internal class KaFirTypeProvider(
         val argumentTypes = (session.typeContext.captureArguments(this, CaptureStatus.FROM_EXPRESSION)?.toList()
             ?: this.typeArguments.mapNotNull { it.type })
 
-        require(typeParameterSymbols.size == argumentTypes.size) {
-            val renderedSymbol = FirRenderer.noAnnotationBodiesAccessorAndArguments().renderElementAsString(symbol.fir)
-            "'$renderedSymbol' expects '${typeParameterSymbols.size}' type arguments " +
-                    "but type '${this.renderForDebugging()}' has ${argumentTypes.size} type arguments."
+        if (typeParameterSymbols.size != argumentTypes.size) {
+            // Should not happen in valid code
+            return emptySequence()
         }
 
         val substitutor = substitutorByMap(typeParameterSymbols.zip(argumentTypes).toMap(), session)
@@ -327,12 +327,17 @@ internal class KaFirTypeProvider(
     @Suppress("OVERRIDE_DEPRECATION")
     override val KaCallableSymbol.dispatchReceiverType: KaType?
         get() = withValidityAssertion {
-            require(this is KaFirSymbol<*>)
-            val firSymbol = firSymbol
-            check(firSymbol is FirCallableSymbol<*>) {
-                "Fir declaration should be FirCallableDeclaration; instead it was ${firSymbol::class}"
+            when (this) {
+                is KaReceiverParameterSymbol -> null
+                else -> {
+                    require(this is KaFirSymbol<*>)
+                    val firSymbol = firSymbol
+                    check(firSymbol is FirCallableSymbol<*>) {
+                        "Fir declaration should be FirCallableDeclaration; instead it was ${firSymbol::class}"
+                    }
+                    return firSymbol.dispatchReceiverType(analysisSession.firSymbolBuilder)
+                }
             }
-            return firSymbol.dispatchReceiverType(analysisSession.firSymbolBuilder)
         }
 
     override val KaType.arrayElementType: KaType?

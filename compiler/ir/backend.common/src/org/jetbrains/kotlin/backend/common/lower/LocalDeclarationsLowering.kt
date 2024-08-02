@@ -1026,9 +1026,8 @@ open class LocalDeclarationsLowering(
                     element.acceptChildren(this, data)
                 }
 
-                override fun visitBlock(expression: IrBlock, data: Data) {
-                    if (expression !is IrInlinedFunctionBlock) return super.visitBlock(expression, data)
-                    super.visitBlock(expression, data.withInline(expression.isFunctionInlining()))
+                override fun visitInlinedFunctionBlock(inlinedBlock: IrInlinedFunctionBlock, data: Data) {
+                    super.visitInlinedFunctionBlock(inlinedBlock, data.withInline(inlinedBlock.isFunctionInlining()))
                 }
 
                 override fun visitFunctionExpression(expression: IrFunctionExpression, data: Data) {
@@ -1104,7 +1103,7 @@ open class LocalDeclarationsLowering(
 // Local inner classes capture anything through outer
 internal fun IrClass.isLocalNotInner(): Boolean = visibility == DescriptorVisibilities.LOCAL && !isInner
 
-// FIXME: This is used by Anvil compiler plugin, remove after Anvil update
+// TODO (KT-70160): This is used by Anvil compiler plugin, remove after Anvil update.
 @Deprecated("Moved to IR Utils", level = DeprecationLevel.HIDDEN)
 val IrDeclaration.parents: Sequence<IrDeclarationParent>
     get() = generateSequence(parent) { (it as? IrDeclaration)?.parent }

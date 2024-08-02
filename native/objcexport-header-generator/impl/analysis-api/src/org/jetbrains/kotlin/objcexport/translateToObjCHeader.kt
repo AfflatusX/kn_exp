@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.objcexport
 
-import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
 import org.jetbrains.kotlin.backend.konan.objcexport.*
 import org.jetbrains.kotlin.name.ClassId
@@ -15,15 +14,15 @@ import org.jetbrains.kotlin.objcexport.extras.requiresForwardDeclaration
 import org.jetbrains.kotlin.objcexport.extras.throwsAnnotationClassIds
 
 
-context(KaSession, KtObjCExportSession)
-@Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-fun translateToObjCHeader(
+fun ObjCExportContext.translateToObjCHeader(
     files: List<KtObjCExportFile>,
     withObjCBaseDeclarations: Boolean = true,
 ): ObjCHeader {
     val generator = KtObjCExportHeaderGenerator(withObjCBaseDeclarations)
-    generator.translateAll(files.sortedWith(StableFileOrder))
-    return generator.buildObjCHeader()
+    return with(generator) {
+        translateAll(files.sortedWith(StableFileOrder))
+        buildObjCHeader()
+    }
 }
 
 /**
@@ -70,9 +69,8 @@ private class KtObjCExportHeaderGenerator(
      */
     private val objCClassForwardDeclarations = mutableSetOf<String>()
 
-    context(KaSession, KtObjCExportSession)
-    @Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-    fun translateAll(files: List<KtObjCExportFile>) {
+
+    fun ObjCExportContext.translateAll(files: List<KtObjCExportFile>) {
         /**
          * Step 1: Translate classifiers (class, interface, object, ...)
          */
@@ -81,15 +79,21 @@ private class KtObjCExportHeaderGenerator(
         }
 
         /**
-         * Step 2: Translate file facades (see [translateToTopLevelFileFacade], [translateToExtensionFacade])
+         * Step 2: Translate extensions (see [translateToObjCExtensionFacades])
+         * This step has to be done after all classifiers were translated to match the translation order of K1
+         */
+        translateExtensionsFacades(files)
+
+        /**
+         * Step 3: Translate top level callables (see [translateToTopLevelFileFacade])
          * This step has to be done after all classifiers were translated to match the translation order of K1
          */
         files.forEach { file ->
-            translateFileFacades(file)
+            translateTopLevelFacade(file)
         }
 
         /**
-         * Step 3: Translate dependency classes referenced by Step 1 and Step 2
+         * Step 4: Translate dependency classes referenced by Step 1 and Step 2
          * Note: Transitive dependencies will still add to this queue and will be processed until we're finished
          */
         while (true) {
@@ -97,42 +101,37 @@ private class KtObjCExportHeaderGenerator(
         }
     }
 
-    context(KaSession, KtObjCExportSession)
-    @Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-    private fun translateClass(classId: ClassId) {
-        val classOrObjectSymbol = findClass(classId) ?: return
+
+    private fun ObjCExportContext.translateClass(classId: ClassId) {
+        val classOrObjectSymbol = analysisSession.findClass(classId) ?: return
         translateClassOrObjectSymbol(classOrObjectSymbol)
     }
 
-    context(KaSession, KtObjCExportSession)
-    @Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-    private fun translateFileClassifiers(file: KtObjCExportFile) {
-        val resolvedFile = file.resolve()
+    private fun ObjCExportContext.translateFileClassifiers(file: KtObjCExportFile) {
+        val resolvedFile = with(file) { analysisSession.resolve() }
         resolvedFile.classifierSymbols.sortedWith(StableClassifierOrder).forEach { classOrObjectSymbol ->
             translateClassOrObjectSymbol(classOrObjectSymbol)
         }
     }
 
-    context(KaSession, KtObjCExportSession)
-    @Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-    private fun translateFileFacades(file: KtObjCExportFile) {
-        val resolvedFile = file.resolve()
-
-        resolvedFile.translateToObjCExtensionFacades().forEach { facade ->
-            objCStubs += facade
+    private fun ObjCExportContext.translateExtensionsFacades(files: List<KtObjCExportFile>) {
+        translateToObjCExtensionFacades(files).forEach { facade ->
+            addObjCStubIfNotTranslated(facade)
             enqueueDependencyClasses(facade)
             objCClassForwardDeclarations += facade.name
         }
+    }
 
-        resolvedFile.translateToObjCTopLevelFacade()?.let { topLevelFacade ->
-            objCStubs += topLevelFacade
+    private fun ObjCExportContext.translateTopLevelFacade(file: KtObjCExportFile) {
+        val resolvedFile = with(file) { analysisSession.resolve() }
+
+        translateToObjCTopLevelFacade(resolvedFile)?.let { topLevelFacade ->
+            addObjCStubIfNotTranslated(topLevelFacade)
             enqueueDependencyClasses(topLevelFacade)
         }
     }
 
-    context(KaSession, KtObjCExportSession)
-    @Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-    private fun translateClassOrObjectSymbol(symbol: KaClassSymbol): ObjCClass? {
+    private fun ObjCExportContext.translateClassOrObjectSymbol(symbol: KaClassSymbol): ObjCClass? {
         /* No classId, no stubs ¯\_(ツ)_/¯ */
         val classId = symbol.classId ?: return null
 
@@ -143,7 +142,7 @@ private class KtObjCExportHeaderGenerator(
          * Translate: Note: Even if the result was 'null', the classId will still be marked as 'handled' by adding it
          * to the [objCStubsByClassId] index.
          */
-        val objCClass = symbol.translateToObjCExportStub()
+        val objCClass = translateToObjCExportStub(symbol)
         objCStubsByClassId[classId] = objCClass
         objCClass ?: return null
 
@@ -153,13 +152,14 @@ private class KtObjCExportHeaderGenerator(
         2) Super interface / superclass symbol export stubs (result of translation) have to be present in the stubs list before the
         original stub
          */
-        symbol.getDeclaredSuperInterfaceSymbols().filter { it.isVisibleInObjC() }.forEach { superInterfaceSymbol ->
-            translateClassOrObjectSymbol(superInterfaceSymbol)?.let {
-                objCProtocolForwardDeclarations += it.name
+        analysisSession.getDeclaredSuperInterfaceSymbols(symbol).filter { analysisSession.isVisibleInObjC(it) }
+            .forEach { superInterfaceSymbol ->
+                translateClassOrObjectSymbol(superInterfaceSymbol)?.let {
+                    objCProtocolForwardDeclarations += it.name
+                }
             }
-        }
 
-        symbol.getSuperClassSymbolNotAny()?.takeIf { it.isVisibleInObjC() }?.let { superClassSymbol ->
+        analysisSession.getSuperClassSymbolNotAny(symbol)?.takeIf { analysisSession.isVisibleInObjC(it) }?.let { superClassSymbol ->
             translateClassOrObjectSymbol(superClassSymbol)?.let {
                 objCClassForwardDeclarations += it.name
             }
@@ -167,7 +167,7 @@ private class KtObjCExportHeaderGenerator(
 
 
         /* Note: It is important to add *this* stub to the result list only after translating/processing the superclass symbols */
-        objCStubs += objCClass
+        addObjCStubIfNotTranslated(objCClass)
         objCStubsByClassName[objCClass.name] = objCClass
         enqueueDependencyClasses(objCClass)
         return objCClass
@@ -229,9 +229,7 @@ private class KtObjCExportHeaderGenerator(
         return ObjCClassForwardDeclaration(className)
     }
 
-    context(KaSession, KtObjCExportSession)
-    @Suppress("CONTEXT_RECEIVERS_DEPRECATED")
-    fun buildObjCHeader(): ObjCHeader {
+    fun ObjCExportContext.buildObjCHeader(): ObjCHeader {
         val hasErrorTypes = objCStubs.hasErrorTypes()
 
         val protocolForwardDeclarations = objCProtocolForwardDeclarations.toSet()
@@ -240,14 +238,36 @@ private class KtObjCExportHeaderGenerator(
             .map { className -> resolveObjCClassForwardDeclaration(className) }
             .toSet()
 
-        val stubs = (if (withObjCBaseDeclarations) objCBaseDeclarations() else emptyList()).plus(objCStubs)
-            .plus(listOfNotNull(errorInterface.takeIf { hasErrorTypes }))
+        val stubs = (if (withObjCBaseDeclarations) exportSession.objCBaseDeclarations() else emptyList()).plus(objCStubs)
+            .plus(listOfNotNull(exportSession.errorInterface.takeIf { hasErrorTypes }))
 
         return ObjCHeader(
             stubs = stubs,
-            classForwardDeclarations = classForwardDeclarations,
-            protocolForwardDeclarations = protocolForwardDeclarations,
+            classForwardDeclarations = classForwardDeclarations.sortedBy { it.className }.toSet(),
+            protocolForwardDeclarations = protocolForwardDeclarations.sortedBy { it }.toSet(),
             additionalImports = emptyList()
         )
+    }
+
+    /**
+     * We verify if a class is already translated by checking the equality of its name and category.
+     *
+     * ObjC categories are used to translate extensions,
+     * so having two classes with the same name but different categories is a valid case.
+     *
+     * ```
+     * @interface Foo
+     * @interface Foo (Extension)
+     * ```
+     *
+     * K1 also uses a dedicated hash map, but filtering out is spread across the translation traversal.
+     * See the usage of [org.jetbrains.kotlin.backend.konan.objcexport.ObjCExportHeaderGenerator.generatedClasses].
+     */
+    private fun addObjCStubIfNotTranslated(objCClass: ObjCClass) {
+        val translatedClass = objCStubsByClassName[objCClass.name]
+        val equalName = objCClass.name == translatedClass?.name
+        val equalCategory = (translatedClass as? ObjCInterface)?.categoryName == (objCClass as? ObjCInterface)?.categoryName
+        if (equalName && equalCategory) return
+        else objCStubs += objCClass
     }
 }

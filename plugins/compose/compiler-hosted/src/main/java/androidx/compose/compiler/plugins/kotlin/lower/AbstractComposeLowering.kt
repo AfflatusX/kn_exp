@@ -923,11 +923,9 @@ abstract class AbstractComposeLowering(
         return property
     }
 
-    private val hiddenFromObjCAnnotationSymbol: IrClassSymbol = getTopLevelClass(hiddenFromObjCClassId)
-    private val hiddenFromObjCAnnotation = IrConstructorCallImpl.fromSymbolOwner(
-        type = hiddenFromObjCAnnotationSymbol.defaultType,
-        constructorSymbol = hiddenFromObjCAnnotationSymbol.constructors.first()
-    )
+    private val hiddenFromObjCAnnotationSymbol: IrClassSymbol by lazy {
+        getTopLevelClass(hiddenFromObjCClassId)
+    }
 
     private fun IrClass.buildStabilityGetter(stabilityProp: IrProperty, parent: IrPackageFragment) {
         val getterName = uniqueStabilityGetterName()
@@ -944,7 +942,6 @@ abstract class AbstractComposeLowering(
             returnType = stabilityField.type
             visibility = DescriptorVisibilities.PUBLIC
             origin = IrDeclarationOrigin.GeneratedByPlugin(ComposeCompilerKey)
-            annotations = listOf(hiddenFromObjCAnnotation)
         }.also { fn ->
             fn.parent = parent
             fn.body = DeclarationIrBuilder(context, fn.symbol).irBlockBody {
@@ -952,6 +949,11 @@ abstract class AbstractComposeLowering(
             }
             parent.addChild(fn)
         }
+
+        val hiddenFromObjCAnnotation = IrConstructorCallImpl.fromSymbolOwner(
+            type = hiddenFromObjCAnnotationSymbol.defaultType,
+            constructorSymbol = hiddenFromObjCAnnotationSymbol.constructors.first()
+        )
 
         context.metadataDeclarationRegistrar.addMetadataVisibleAnnotationsToElement(stabilityGetter, hiddenFromObjCAnnotation)
         context.metadataDeclarationRegistrar.registerFunctionAsMetadataVisible(stabilityGetter)

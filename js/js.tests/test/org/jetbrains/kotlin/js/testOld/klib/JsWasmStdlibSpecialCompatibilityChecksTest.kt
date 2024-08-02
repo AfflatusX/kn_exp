@@ -6,14 +6,18 @@
 package org.jetbrains.kotlin.js.testOld.klib
 
 import org.jetbrains.kotlin.backend.common.diagnostics.StandardLibrarySpecialCompatibilityChecker
+import org.jetbrains.kotlin.backend.common.diagnostics.StandardLibrarySpecialCompatibilityChecker.Companion.KLIB_JAR_LIBRARY_VERSION
+import org.jetbrains.kotlin.backend.common.diagnostics.StandardLibrarySpecialCompatibilityChecker.Companion.KLIB_JAR_MANIFEST_FILE
 import org.jetbrains.kotlin.js.testOld.utils.runJsCompiler
+import org.jetbrains.kotlin.konan.file.zipDirAs
 import org.jetbrains.kotlin.library.KLIB_PROPERTY_BUILTINS_PLATFORM
-import org.jetbrains.kotlin.library.KLIB_PROPERTY_COMPILER_VERSION
 import org.jetbrains.kotlin.library.impl.BuiltInsPlatform
 import org.jetbrains.kotlin.test.TestCaseWithTmpdir
 import org.jetbrains.kotlin.test.utils.TestMessageCollector
 import java.io.File
 import java.util.*
+import java.util.jar.Manifest
+import org.jetbrains.kotlin.konan.file.File as KFile
 
 class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
 
@@ -62,8 +66,8 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
         testCurrentAndNextBasicVersions { currentVersion, nextVersion ->
             for ((stdlibVersion, compilerVersion) in listOf(currentVersion to nextVersion, nextVersion to currentVersion)) {
                 compileDummyLibrary(
-                    stdlibVersion = currentVersion,
-                    compilerVersion = nextVersion,
+                    stdlibVersion = stdlibVersion,
+                    compilerVersion = compilerVersion,
                     isWasm = true,
                     expectedWarningStatus = WarningStatus.WASM_WARNING
                 )
@@ -118,6 +122,17 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
         isWasm: Boolean,
         expectedWarningStatus: WarningStatus,
     ) {
+        compileDummyLibrary(stdlibVersion, compilerVersion, isWasm, isZipped = false, expectedWarningStatus)
+        compileDummyLibrary(stdlibVersion, compilerVersion, isWasm, isZipped = true, expectedWarningStatus)
+    }
+
+    private fun compileDummyLibrary(
+        stdlibVersion: TestVersion?,
+        compilerVersion: TestVersion?,
+        isWasm: Boolean,
+        isZipped: Boolean,
+        expectedWarningStatus: WarningStatus,
+    ) {
         val sourcesDir = createDir("sources")
         val outputDir = createDir("build")
 
@@ -127,7 +142,11 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
         val messageCollector = TestMessageCollector()
 
         withCustomCompilerVersion(compilerVersion) {
-            val fakeStdlib = createFakeStdlibWithSpecificVersion(isWasm, stdlibVersion)
+            val fakeStdlib = if (isZipped)
+                createFakeZippedStdlibWithSpecificVersion(isWasm, stdlibVersion)
+            else
+                createFakeUnzippedStdlibWithSpecificVersion(isWasm, stdlibVersion)
+
             runJsCompiler(messageCollector) {
                 this.freeArgs = listOf(sourceFile.absolutePath)
                 this.noStdlib = true // it is passed explicitly
@@ -174,7 +193,7 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
         return messages.any { stdlibMessagePart in it.message && compilerMessagePart in it.message }
     }
 
-    private fun createFakeStdlibWithSpecificVersion(isWasm: Boolean, version: TestVersion?): File {
+    private fun createFakeUnzippedStdlibWithSpecificVersion(isWasm: Boolean, version: TestVersion?): File {
         val rawVersion = version?.toString()
 
         val patchedStdlibDir = createDir("dependencies/stdlib-${rawVersion ?: "unknown"}")
@@ -185,17 +204,37 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
         assertTrue(originalStdlibDir.isDirectory)
         originalStdlibDir.copyRecursively(patchedStdlibDir)
 
-        val properties = manifestFile.inputStream().use { Properties().apply { load(it) } }
-        properties.remove(KLIB_PROPERTY_COMPILER_VERSION)
-        if (rawVersion != null) properties[KLIB_PROPERTY_COMPILER_VERSION] = rawVersion
-
-        if (isWasm) {
-            properties[KLIB_PROPERTY_BUILTINS_PLATFORM] = BuiltInsPlatform.WASM.name
+        if (rawVersion != null) {
+            val jarManifestFile = patchedStdlibDir.resolve(KLIB_JAR_MANIFEST_FILE)
+            jarManifestFile.parentFile.mkdirs()
+            jarManifestFile.outputStream().use { os ->
+                with(Manifest()) {
+                    mainAttributes.putValue(KLIB_JAR_LIBRARY_VERSION, rawVersion)
+                    mainAttributes.putValue("Manifest-Version", "1.0") // some convention stuff to make Jar manifest work
+                    write(os)
+                }
+            }
         }
 
-        manifestFile.outputStream().use { properties.store(it, null) }
+        if (isWasm) {
+            val properties = manifestFile.inputStream().use { Properties().apply { load(it) } }
+            properties[KLIB_PROPERTY_BUILTINS_PLATFORM] = BuiltInsPlatform.WASM.name
+            manifestFile.outputStream().use { properties.store(it, null) }
+        }
 
         return patchedStdlibDir
+    }
+
+    private fun createFakeZippedStdlibWithSpecificVersion(isWasm: Boolean, version: TestVersion?): File {
+        val rawVersion = version?.toString()
+
+        val patchedStdlibFile = createFile("dependencies/stdlib-${rawVersion ?: "unknown"}.klib")
+        if (patchedStdlibFile.exists()) return patchedStdlibFile
+
+        val unzippedStdlibDir = createFakeUnzippedStdlibWithSpecificVersion(isWasm, version)
+        zipDirectory(directory = unzippedStdlibDir, zipFile = patchedStdlibFile)
+
+        return patchedStdlibFile
     }
 
     private inline fun <T> withCustomCompilerVersion(version: TestVersion?, block: () -> T): T {
@@ -209,6 +248,7 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
     }
 
     private fun createDir(name: String): File = tmpdir.resolve(name).apply { mkdirs() }
+    private fun createFile(name: String): File = tmpdir.resolve(name).apply { parentFile.mkdirs() }
 
     private enum class WarningStatus { NO_WARNINGS, JS_WARNING, WASM_WARNING }
 
@@ -234,5 +274,9 @@ class JsWasmStdlibSpecialCompatibilityChecksTest : TestCaseWithTmpdir() {
                 TestVersion(2, 0, 0, "-Beta2"),
                 TestVersion(2, 0, 255, "-SNAPSHOT"),
             ).groupByTo(TreeMap()) { it.basicVersion }.values.toList()
+
+        private fun zipDirectory(directory: File, zipFile: File) {
+            KFile(directory.toPath()).zipDirAs(KFile(zipFile.toPath()))
+        }
     }
 }

@@ -12,8 +12,8 @@ import org.jetbrains.kotlin.fir.backend.Fir2IrComponents
 import org.jetbrains.kotlin.fir.backend.Fir2IrDeclarationStorage
 import org.jetbrains.kotlin.fir.languageVersionSettings
 import org.jetbrains.kotlin.fir.resolve.FirJvmActualizingBuiltinSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.getRegularClassSymbolByClassId
-import org.jetbrains.kotlin.fir.resolve.providers.impl.FirBuiltinSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirCachingCompositeSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.runIf
  * But only for expect declarations marked with `ActualizeByJvmBuiltinProvider` annotation
  */
 class FirJvmBuiltinProviderActualDeclarationExtractor private constructor(
-    private val provider: FirBuiltinSymbolProvider,
+    private val provider: FirSymbolProvider,
     private val classifierStorage: Fir2IrClassifierStorage,
     private val declarationStorage: Fir2IrDeclarationStorage,
 ) : IrExtraActualDeclarationExtractor() {
@@ -50,7 +50,7 @@ class FirJvmBuiltinProviderActualDeclarationExtractor private constructor(
                 val firJvmActualizingBuiltinSymbolProvider =
                     dependencyProviders.filterIsInstance<FirJvmActualizingBuiltinSymbolProvider>().single()
                 FirJvmBuiltinProviderActualDeclarationExtractor(
-                    firJvmActualizingBuiltinSymbolProvider.builtinSymbolProvider,
+                    firJvmActualizingBuiltinSymbolProvider.builtinsSymbolProvider,
                     platformComponents.classifierStorage,
                     platformComponents.declarationStorage
                 )

@@ -115,7 +115,6 @@ class CodeConformanceTest : TestCase() {
                 "libraries/tools/gradle/android-test-fixes/build",
                 "libraries/tools/gradle/gradle-warnings-detector/build",
                 "libraries/tools/gradle/kotlin-compiler-args-properties/build",
-                "libraries/tools/gradle/fus-statistics-gradle-plugin/build",
                 "libraries/tools/kotlin-allopen/build",
                 "libraries/tools/kotlin-assignment/build",
                 "libraries/tools/kotlin-gradle-build-metrics/build",
@@ -142,11 +141,12 @@ class CodeConformanceTest : TestCase() {
                 "repo/codebase-tests/tests/org/jetbrains/kotlin/code/CodeConformanceTest.kt",
                 "repo/gradle-settings-conventions/build-cache/build/generated-sources",
                 "repo/gradle-settings-conventions/jvm-toolchain-provisioning/build/generated-sources",
-                "repo/gradle-settings-conventions/gradle-enterprise/build/generated-sources",
+                "repo/gradle-settings-conventions/develocity/build/generated-sources",
                 "repo/gradle-settings-conventions/kotlin-daemon-config/build/generated-sources",
                 "repo/gradle-build-conventions/buildsrc-compat/build/generated-sources",
                 "repo/gradle-build-conventions/generators/build/generated-sources",
                 "repo/gradle-build-conventions/compiler-tests-convention/build/generated-sources",
+                "repo/gradle-build-conventions/android-sdk-provisioner/build/generated-sources",
                 ".gradle/expanded",
             )
         )
@@ -225,7 +225,7 @@ class CodeConformanceTest : TestCase() {
             FileTestCase(
                 message = """
                 |KT-60644: Using Gradle 'AttributeContainer.attribute(key, value)' method leads to eager tasks creation in Kotlin
-                |Gradle plugin. Please use instead for KGP code 'HasAttributes.setAttributeProvider' or 'HasAttributes.setAttribute' 
+                |Gradle plugin. Please use instead for KGP code 'HasAttributes.setAttributeProvider' or 'HasAttributes.setAttribute'
                 |(for simple values) extension methods and for other code 'AttributeContainer.attributeProvider(key, provider { value })'.
                 |
                 |%d files are affected. Please update these files or exclude them in this test:
@@ -239,7 +239,6 @@ class CodeConformanceTest : TestCase() {
                     "libraries/tools/kotlin-gradle-plugin/src/gradle74/kotlin/org/jetbrains/kotlin/gradle/plugin/internal/AttributesConfigurationHelperG74.kt",
                     "libraries/tools/kotlin-gradle-plugin-integration-tests/src/test/kotlin/org/jetbrains/kotlin/gradle/native/GeneralNativeIT.kt",
                     "libraries/tools/kotlin-gradle-plugin-integration-tests/src/test/kotlin/org/jetbrains/kotlin/gradle/KotlinGradlePluginIT.kt",
-                    "libraries/tools/kotlin-gradle-plugin-integration-tests/src/test/kotlin/org/jetbrains/kotlin/gradle/mpp/AndroidAndJavaConsumeMppLibIT.kt",
                     "repo/gradle-build-conventions/buildsrc-compat/src/main/kotlin/plugins/CustomVariantPublishingDsl.kt",
                 )
             ) { _, source ->

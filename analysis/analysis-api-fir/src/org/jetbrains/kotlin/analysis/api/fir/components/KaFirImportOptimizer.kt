@@ -306,7 +306,7 @@ internal class KaFirImportOptimizer(
                             } else if (fqName != qualifiedNameAsFqName) {
                                 // or some kind of top level declaration with potential receiver
                                 this += fqName
-                                val receiverClassType = symbol.receiverParameter?.type as? KaClassType
+                                val receiverClassType = symbol.receiverParameter?.returnType as? KaClassType
                                 val receiverFqName = receiverClassType?.classId?.asSingleFqName()
                                 // import has no receiver for receiver kdoc declaration:
                                 // for receiver case kdoc like `[Foo.bar]`
@@ -405,7 +405,7 @@ private val FirResolvedTypeRef.resolvedClassId: ClassId?
         if (this !is FirErrorTypeRef) {
             // When you call a method from Java with type arguments, in FIR they are currently represented as flexible types.
             // TODO Consider handling other non-ConeLookupTagBasedType types here (see KT-66418)
-            return type.abbreviatedTypeOrSelf.lowerBoundIfFlexible().classId
+            return coneType.abbreviatedTypeOrSelf.lowerBoundIfFlexible().classId
         }
 
         val candidateSymbols = diagnostic.getCandidateSymbols()

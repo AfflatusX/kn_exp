@@ -9,6 +9,8 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import org.jetbrains.kotlin.config.AnalysisFlags
+import org.jetbrains.kotlin.KtFakeSourceElementKind
+import org.jetbrains.kotlin.fakeElement
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.expandedConeType
@@ -493,7 +495,9 @@ open class FirSupertypeResolverVisitor(
         val typeResolveService = TypeResolveServiceForPlugins(typeResolveTransformer, scopeDeclaration)
         for (extension in supertypeGenerationExtensions) {
             if (extension.needTransformSupertypes(klass)) {
-                supertypeRefs += extension.computeAdditionalSupertypes(klass, supertypeRefs, typeResolveService)
+                extension.computeAdditionalSupertypes(klass, supertypeRefs, typeResolveService).mapTo(supertypeRefs) {
+                    it.toFirResolvedTypeRef(klass.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated))
+                }
             }
         }
     }
@@ -534,7 +538,7 @@ open class FirSupertypeResolverVisitor(
                 }
             }
             if (someTypesWereGenerated && superTypes.isNotEmpty()) {
-                superTypes.removeIf { it.type.isAny }
+                superTypes.removeIf { it.coneType.isAny }
             }
             nestedClass.replaceSuperTypeRefs(superTypes)
         }
@@ -568,20 +572,19 @@ open class FirSupertypeResolverVisitor(
             val resolvedTypeRef = transformer.transformTypeRef(expandedTypeRef, scope)
 
             if (resolveRecursively) {
-                fun visitNestedTypeAliases(type: TypeArgumentMarker) {
-                    if (type is ConeClassLikeType) {
-                        val symbol = type.lookupTag.toSymbol(session)
-                        if (symbol is FirTypeAliasSymbol) {
-                            visitTypeAlias(symbol.fir, null)
-                        } else if (symbol is FirClassLikeSymbol) {
-                            for (typeArgument in type.typeArguments) {
-                                visitNestedTypeAliases(typeArgument)
-                            }
+                fun visitNestedTypeAliases(type: ConeTypeProjection) {
+                    val typeToCheck = type.type as? ConeClassLikeType ?: return
+                    val symbol = typeToCheck.lookupTag.toSymbol(session)
+                    if (symbol is FirTypeAliasSymbol) {
+                        visitTypeAlias(symbol.fir, null)
+                    } else if (symbol is FirClassLikeSymbol) {
+                        for (typeArgument in typeToCheck.typeArguments) {
+                            visitNestedTypeAliases(typeArgument)
                         }
                     }
                 }
 
-                visitNestedTypeAliases(resolvedTypeRef.type)
+                visitNestedTypeAliases(resolvedTypeRef.coneType)
             }
 
             listOf(resolvedTypeRef)
@@ -771,17 +774,16 @@ open class SupertypeComputationSession {
                         if (type in visitedTypes) return
                         visitedTypes += type
                         for (typeArgument in type.typeArguments) {
-                            if (typeArgument is ConeClassLikeType) {
-                                checkIsInLoop(
-                                    typeArgument.lookupTag.toSymbol(session)?.fir,
-                                    wasSubtypingInvolved, areTypeArgumentsCurrentlyInvolved,
-                                )
-                                checkTypeArgumentsRecursively(typeArgument, visitedTypes)
-                            }
+                            val typeToCheck = typeArgument.type as? ConeClassLikeType ?: continue
+                            checkIsInLoop(
+                                typeToCheck.lookupTag.toSymbol(session)?.fir,
+                                wasSubtypingInvolved, areTypeArgumentsCurrentlyInvolved,
+                            )
+                            checkTypeArgumentsRecursively(typeToCheck, visitedTypes)
                         }
                     }
 
-                    checkTypeArgumentsRecursively(supertypeRef.type, mutableSetOf())
+                    checkTypeArgumentsRecursively(supertypeRef.coneType, mutableSetOf())
                 }
 
                 resultSupertypeRefs.add(
@@ -853,7 +855,7 @@ open class SupertypeComputationSession {
                 typeRef.coneType -> typeRef
                 else -> {
                     if (session.languageVersionSettings.getFlag(AnalysisFlags.expandTypeAliasesInTypeResolution)) {
-                        expanded.withAbbreviation(AbbreviatedTypeAttribute(typeRef.coneType)).let(typeRef::withReplacedConeType)
+                        expanded.let(typeRef::withReplacedConeType)
                     } else {
                         typeRef
                     }

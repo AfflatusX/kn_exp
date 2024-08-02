@@ -9,6 +9,7 @@ import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.config.LanguageFeature.*
 import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.DiagnosticList
 import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.PositioningStrategy
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
@@ -93,6 +94,7 @@ object JVM_DIAGNOSTICS_LIST : DiagnosticList("FirJvmErrors") {
         val STRICTFP_ON_CLASS by error<KtAnnotationEntry>()
         val SYNCHRONIZED_ON_ABSTRACT by error<KtAnnotationEntry>()
         val SYNCHRONIZED_IN_INTERFACE by error<KtAnnotationEntry>()
+        val SYNCHRONIZED_IN_ANNOTATION by deprecationError<KtAnnotationEntry>(ForbidJvmAnnotationsOnAnnotationParameters)
         val SYNCHRONIZED_ON_INLINE by warning<KtAnnotationEntry>()
         val SYNCHRONIZED_ON_VALUE_CLASS by deprecationError<KtAnnotationEntry>(ProhibitSynchronizationByValueClassesAndPrimitives)
         val SYNCHRONIZED_ON_SUSPEND by deprecationError<KtAnnotationEntry>(SynchronizedSuspendError)
@@ -122,6 +124,10 @@ object JVM_DIAGNOSTICS_LIST : DiagnosticList("FirJvmErrors") {
 
     val SUPER by object : DiagnosticGroup("Super") {
         val INTERFACE_CANT_CALL_DEFAULT_METHOD_VIA_SUPER by error<PsiElement>(PositioningStrategy.REFERENCE_BY_QUALIFIED)
+        val JAVA_CLASS_INHERITS_KT_PRIVATE_CLASS by error<KtElement> {
+            parameter<ClassId>("javaClassId")
+            parameter<ConeKotlinType>("privateKotlinType")
+        }
     }
 
     val RECORDS by object : DiagnosticGroup("JVM Records") {
@@ -236,6 +242,9 @@ object JVM_DIAGNOSTICS_LIST : DiagnosticList("FirJvmErrors") {
         }
         val JAVA_FIELD_SHADOWED_BY_KOTLIN_PROPERTY by error<PsiElement>(PositioningStrategy.REFERENCED_NAME_BY_QUALIFIED) {
             parameter<FirPropertySymbol>("kotlinProperty")
+        }
+        val MISSING_BUILT_IN_DECLARATION by error<PsiElement>(PositioningStrategy.REFERENCED_NAME_BY_QUALIFIED) {
+            parameter<FirBasedSymbol<*>>("symbol")
         }
     }
 }

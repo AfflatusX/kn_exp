@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.backend.konan.testUtils.headersTestDataDir
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.junit.jupiter.api.Test
 import java.io.File
-import kotlin.reflect.KTypeProjection
 import kotlin.test.fail
 
 /**
@@ -254,12 +253,7 @@ class ObjCExportHeaderGeneratorTest(private val generator: HeaderGenerator) {
         doTest(headersTestDataDir.resolve("classWithGenerics"))
     }
 
-    /**
-     * - init method missing
-     * - 'new constructor' missing
-     */
     @Test
-    @TodoAnalysisApi
     fun `test - objectWithGenericSuperclass`() {
         doTest(headersTestDataDir.resolve("objectWithGenericSuperclass"))
     }
@@ -457,14 +451,38 @@ class ObjCExportHeaderGeneratorTest(private val generator: HeaderGenerator) {
     }
 
     @Test
+    fun `test - top level interface extension property`() {
+        doTest(headersTestDataDir.resolve("topLevelInterfaceExtensionProperty"))
+    }
+
+    @Test
     fun `test - internalPublicApi`() {
-        KTypeProjection.Companion
         doTest(headersTestDataDir.resolve("internalPublicApi"))
     }
 
     @Test
-    fun `test - top level interface extension property`() {
-        doTest(headersTestDataDir.resolve("topLevelInterfaceExtensionProperty"))
+    fun `test - extension with primitive parameter`() {
+        doTest(headersTestDataDir.resolve("extensionWithPrimitiveParameter"))
+    }
+
+    @Test
+    fun `test - generic super type`() {
+        doTest(headersTestDataDir.resolve("genericSuperType"))
+    }
+
+    @Test
+    fun `test - class and extension function in same file`() {
+        doTest(headersTestDataDir.resolve("classAndExtensionFunctionInSameFile"))
+    }
+
+    @Test
+    fun `test - empty top level facades`() {
+        doTest(headersTestDataDir.resolve("emptyTopLevelFacades"))
+    }
+
+    @Test
+    fun `test - interface extension`() {
+        doTest(headersTestDataDir.resolve("interfaceExtension"))
     }
 
     private fun doTest(root: File, configuration: Configuration = Configuration()) {

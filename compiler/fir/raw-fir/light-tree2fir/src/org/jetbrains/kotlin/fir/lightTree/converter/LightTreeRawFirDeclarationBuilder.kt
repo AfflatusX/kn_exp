@@ -439,9 +439,6 @@ class LightTreeRawFirDeclarationBuilder(
         val className = identifier.nameAsSafeName(if (calculatedModifiers.isCompanion()) "Companion" else "")
         val isLocalWithinParent = classNode.getParent()?.elementType != CLASS_BODY && isClassLocal(classNode) { getParent() }
         val classIsExpect = calculatedModifiers.hasExpect() || context.containerIsExpect
-        val classIsKotlinAny = identifier.nameAsSafeName() == StandardNames.FqNames.any.shortName()
-                && classNode.getParent()?.getChildNodeByType(PACKAGE_DIRECTIVE)?.getChildNodeByType(REFERENCE_EXPRESSION)
-            ?.getReferencedNameAsName() == StandardNames.BUILT_INS_PACKAGE_NAME
 
         return withChildClassName(className, isExpect = classIsExpect, isLocalWithinParent) {
             val classSymbol = FirRegularClassSymbol(context.currentClassId)
@@ -518,9 +515,9 @@ class LightTreeRawFirDeclarationBuilder(
                         when {
                             calculatedModifiers.isEnum() && (classKind == ClassKind.ENUM_CLASS) && delegatedConstructorSource == null -> {
                                 delegatedSuperTypeRef = buildResolvedTypeRef {
-                                    type = ConeClassLikeTypeImpl(
-                                        implicitEnumType.type.lookupTag,
-                                        arrayOf(selfType.type),
+                                    coneType = ConeClassLikeTypeImpl(
+                                        implicitEnumType.coneType.lookupTag,
+                                        arrayOf(selfType.coneType),
                                         isNullable = false
                                     )
                                     source =classNode.toFirSourceElement(KtFakeSourceElementKind.EnumSuperTypeRef)
@@ -533,8 +530,14 @@ class LightTreeRawFirDeclarationBuilder(
                             }
                         }
 
+                        val classIsKotlinAny = symbol.classId == StandardClassIds.Any
+
                         if (superTypeRefs.isEmpty() && !classIsKotlinAny) {
-                            superTypeRefs += implicitAnyType
+                            val classIsKotlinNothing = symbol.classId == StandardClassIds.Nothing
+                            // kotlin.Nothing doesn't have `Any` supertype, but does have delegating constructor call to Any
+                            if (!classIsKotlinNothing) {
+                                superTypeRefs += implicitAnyType
+                            }
                             delegatedSuperTypeRef = implicitAnyType
                         }
 
@@ -806,7 +809,7 @@ class LightTreeRawFirDeclarationBuilder(
                                 hasSecondaryConstructor = classBodyNode.getChildNodesByType(SECONDARY_CONSTRUCTOR).isNotEmpty(),
                                 hasDefaultConstructor = false,
                                 delegatedSelfTypeRef = buildResolvedTypeRef {
-                                    type = ConeClassLikeTypeImpl(
+                                    coneType = ConeClassLikeTypeImpl(
                                         this@buildAnonymousObject.symbol.toLookupTag(),
                                         ConeTypeProjection.EMPTY_ARRAY,
                                         isNullable = false

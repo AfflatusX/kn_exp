@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.dispatchReceiverClassLookupTagOrNull
 import org.jetbrains.kotlin.fir.isDelegated
+import org.jetbrains.kotlin.fir.lazy.Fir2IrLazyPropertyForPureField
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.scopes.processAllFunctions
 import org.jetbrains.kotlin.fir.scopes.processAllProperties
@@ -47,6 +48,11 @@ class Fir2IrFakeOverrideStrategy(
 ) : FakeOverrideBuilderStrategy.BindToPrivateSymbols(friendModules, delegatedMemberGenerationStrategy) {
     private val fieldOnlyProperties: MutableList<IrPropertyWithLateBinding> = mutableListOf()
 
+    override fun fakeOverrideMember(superType: IrType, member: IrOverridableMember, clazz: IrClass): IrOverridableMember? {
+        if (member is Fir2IrLazyPropertyForPureField && member.backingField?.isStatic == true) return null
+        return super.fakeOverrideMember(superType, member, clazz)
+    }
+
     override fun linkPropertyFakeOverride(property: IrPropertyWithLateBinding, manglerCompatibleMode: Boolean) {
         super.linkPropertyFakeOverride(property, manglerCompatibleMode)
 
@@ -66,7 +72,6 @@ class Fir2IrFakeOverrideStrategy(
 private data class DelegatedMemberInfo(
     val delegatedMember: IrOverridableDeclaration<*>,
     val delegateTargetFromBaseType: IrOverridableDeclaration<*>,
-    val classSymbolOfDelegateField: IrClassSymbol,
     val delegateField: IrField,
     val parent: IrClass,
 )
@@ -152,18 +157,6 @@ class Fir2IrDelegatedMembersGenerationStrategy(
 
         if (!fir2IrExtensions.shouldGenerateDelegatedMember(delegateTargetFromBaseType)) return
 
-        val delegateField = delegateFieldSymbol.owner
-
-        fun IrType.extractClassSymbol(): IrClassSymbol {
-            return when (val classifier = this.classifierOrFail) {
-                is IrClassSymbol -> classifier
-                is IrTypeParameterSymbol -> classifier.owner.superTypes.first().extractClassSymbol()
-                else -> shouldNotBeCalled()
-            }
-        }
-
-        val classOfDelegateField = delegateField.type.extractClassSymbol()
-
         when (overridableMember) {
             is IrSimpleFunction -> overridableMember.updateDeclarationHeader()
             is IrProperty -> {
@@ -173,13 +166,7 @@ class Fir2IrDelegatedMembersGenerationStrategy(
             }
         }
 
-        delegatedInfos += DelegatedMemberInfo(
-            overridableMember,
-            delegateTargetFromBaseType,
-            classOfDelegateField,
-            delegateField,
-            parent
-        )
+        delegatedInfos += DelegatedMemberInfo(overridableMember, delegateTargetFromBaseType, delegateFieldSymbol.owner, parent)
     }
 
     private fun IrOverridableDeclaration<*>.updateDeclarationHeader() {
@@ -196,7 +183,8 @@ class Fir2IrDelegatedMembersGenerationStrategy(
 
     fun generateDelegatedBodies() {
         for (delegatedInfo in delegatedInfos) {
-            val (delegatedMember, delegateTargetFromBaseType, classSymbolOfDelegateField, delegateField, parent) = delegatedInfo
+            val (delegatedMember, delegateTargetFromBaseType, delegateField, parent) = delegatedInfo
+            val classSymbolOfDelegateField = delegateField.type.unwrapTypeParameterType().classOrFail
             when (delegatedMember) {
                 is IrSimpleFunction -> generateDelegatedFunctionBody(
                     delegatedMember,
@@ -468,13 +456,15 @@ class Fir2IrDelegatedMembersGenerationStrategy(
 
         val typeParametersOfClassOfDelegateField = classSymbolOfDelegateField.owner.typeParameters.map { it.symbol }
 
+        val typeOfDelegatedField = delegateField.type.unwrapTypeParameterType() as IrSimpleType
+
         /**
          * Type of delegate field may be a local class that captures type parameters of outer function, so we need to take only first
          *   arguments, which correspond to type parameters of actual class declaration
          */
         val substitutor = IrTypeSubstitutor(
             typeParametersOfClassOfDelegateField,
-            (delegateField.type as IrSimpleType).arguments.take(typeParametersOfClassOfDelegateField.size),
+            typeOfDelegatedField.arguments.take(typeParametersOfClassOfDelegateField.size),
             allowEmptySubstitution = true
         )
         return DelegatedFunctionBodyInfo(
@@ -482,6 +472,15 @@ class Fir2IrDelegatedMembersGenerationStrategy(
             substitutor = substitutor,
             delegatingToMethodOfSupertype = false
         )
+    }
+
+    private fun IrType.unwrapTypeParameterType(): IrType {
+        return when (val classifier = this.classifierOrFail) {
+            is IrClassSymbol -> this
+            // It's impossible to write `by` and `where` clauses at the same time, so there can't be multiple bounds
+            is IrTypeParameterSymbol -> classifier.owner.superTypes.first().unwrapTypeParameterType()
+            is IrScriptSymbol -> shouldNotBeCalled()
+        }
     }
 }
 

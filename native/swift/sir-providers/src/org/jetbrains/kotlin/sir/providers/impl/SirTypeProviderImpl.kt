@@ -37,7 +37,7 @@ public class SirTypeProviderImpl(
     private fun buildSirNominalType(ktType: KaType, ktAnalysisSession: KaSession): SirType {
         fun buildPrimitiveType(ktType: KaType): SirType? = with(ktAnalysisSession) {
             when {
-                ktType.isCharType -> SirUnsupportedType()
+                ktType.isCharType -> SirNominalType(SirSwiftModule.utf16CodeUnit)
                 ktType.isUnitType -> SirNominalType(SirSwiftModule.void)
 
                 ktType.isByteType -> SirNominalType(SirSwiftModule.int8)
@@ -55,6 +55,8 @@ public class SirTypeProviderImpl(
                 ktType.isDoubleType -> SirNominalType(SirSwiftModule.double)
                 ktType.isFloatType -> SirNominalType(SirSwiftModule.float)
                 ktType.isNothingType -> SirNominalType(SirSwiftModule.never)
+
+                ktType.isStringType -> SirNominalType(SirSwiftModule.string)
                 else -> null
             }
         }

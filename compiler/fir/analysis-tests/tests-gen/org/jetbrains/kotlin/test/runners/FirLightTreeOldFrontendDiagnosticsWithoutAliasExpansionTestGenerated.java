@@ -124,6 +124,12 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
     }
 
     @Test
+    @TestMetadata("recursiveTypealiasWithProjection.kt")
+    public void testRecursiveTypealiasWithProjection() {
+      runTest("compiler/testData/diagnostics/tests/recursiveTypealiasWithProjection.kt");
+    }
+
+    @Test
     @TestMetadata("ReserveYield2.kt")
     public void testReserveYield2() {
       runTest("compiler/testData/diagnostics/tests/ReserveYield2.kt");
@@ -227,27 +233,6 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
     @TestMetadata("compiler/testData/diagnostics/tests/backingField")
     @TestDataPath("$PROJECT_ROOT")
     public class BackingField {
-    }
-
-    @Nested
-    @TestMetadata("compiler/testData/diagnostics/tests/builderInference")
-    @TestDataPath("$PROJECT_ROOT")
-    public class BuilderInference {
-      @Nested
-      @TestMetadata("compiler/testData/diagnostics/tests/builderInference/oneParameter")
-      @TestDataPath("$PROJECT_ROOT")
-      public class OneParameter {
-        @Nested
-        @TestMetadata("compiler/testData/diagnostics/tests/builderInference/oneParameter/oneTypeVariable")
-        @TestDataPath("$PROJECT_ROOT")
-        public class OneTypeVariable {
-          @Nested
-          @TestMetadata("compiler/testData/diagnostics/tests/builderInference/oneParameter/oneTypeVariable/oneTypeInfoOrigin")
-          @TestDataPath("$PROJECT_ROOT")
-          public class OneTypeInfoOrigin {
-          }
-        }
-      }
     }
 
     @Nested
@@ -619,6 +604,18 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
         public void testGenericArrayAsReifiedArgument() {
           runTest("compiler/testData/diagnostics/tests/generics/tpAsReified/GenericArrayAsReifiedArgument.kt");
         }
+
+        @Test
+        @TestMetadata("ReifiedTypeAliasDisabled.kt")
+        public void testReifiedTypeAliasDisabled() {
+          runTest("compiler/testData/diagnostics/tests/generics/tpAsReified/ReifiedTypeAliasDisabled.kt");
+        }
+
+        @Test
+        @TestMetadata("ReifiedTypeAliasEnabled.kt")
+        public void testReifiedTypeAliasEnabled() {
+          runTest("compiler/testData/diagnostics/tests/generics/tpAsReified/ReifiedTypeAliasEnabled.kt");
+        }
       }
     }
 
@@ -675,12 +672,6 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
       }
 
       @Nested
-      @TestMetadata("compiler/testData/diagnostics/tests/inference/builderInference")
-      @TestDataPath("$PROJECT_ROOT")
-      public class BuilderInference {
-      }
-
-      @Nested
       @TestMetadata("compiler/testData/diagnostics/tests/inference/capturedTypes")
       @TestDataPath("$PROJECT_ROOT")
       public class CapturedTypes {
@@ -711,6 +702,27 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
         @TestMetadata("definitelyNotNullTypeInReturnPosition.kt")
         public void testDefinitelyNotNullTypeInReturnPosition() {
           runTest("compiler/testData/diagnostics/tests/inference/constraints/definitelyNotNullTypeInReturnPosition.kt");
+        }
+      }
+
+      @Nested
+      @TestMetadata("compiler/testData/diagnostics/tests/inference/pcla")
+      @TestDataPath("$PROJECT_ROOT")
+      public class Pcla {
+        @Nested
+        @TestMetadata("compiler/testData/diagnostics/tests/inference/pcla/oneParameter")
+        @TestDataPath("$PROJECT_ROOT")
+        public class OneParameter {
+          @Nested
+          @TestMetadata("compiler/testData/diagnostics/tests/inference/pcla/oneParameter/oneTypeVariable")
+          @TestDataPath("$PROJECT_ROOT")
+          public class OneTypeVariable {
+            @Nested
+            @TestMetadata("compiler/testData/diagnostics/tests/inference/pcla/oneParameter/oneTypeVariable/oneTypeInfoOrigin")
+            @TestDataPath("$PROJECT_ROOT")
+            public class OneTypeInfoOrigin {
+            }
+          }
         }
       }
 
@@ -1066,6 +1078,12 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
       public void testSamConversionToGenericWrongNullabilityDnnRepresentation() {
         runTest("compiler/testData/diagnostics/tests/samConversions/samConversionToGenericWrongNullabilityDnnRepresentation.kt");
       }
+
+      @Test
+      @TestMetadata("samConversionToGenericWrongNullabilityForbidden.kt")
+      public void testSamConversionToGenericWrongNullabilityForbidden() {
+        runTest("compiler/testData/diagnostics/tests/samConversions/samConversionToGenericWrongNullabilityForbidden.kt");
+      }
     }
 
     @Nested
@@ -1326,9 +1344,21 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
       }
 
       @Test
+      @TestMetadata("expansionWithinElvis.kt")
+      public void testExpansionWithinElvis() {
+        runTest("compiler/testData/diagnostics/tests/typealias/expansionWithinElvis.kt");
+      }
+
+      @Test
       @TestMetadata("exposedExpandedType.kt")
       public void testExposedExpandedType() {
         runTest("compiler/testData/diagnostics/tests/typealias/exposedExpandedType.kt");
+      }
+
+      @Test
+      @TestMetadata("flexibleTypeExpansion.kt")
+      public void testFlexibleTypeExpansion() {
+        runTest("compiler/testData/diagnostics/tests/typealias/flexibleTypeExpansion.kt");
       }
 
       @Test

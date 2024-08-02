@@ -118,24 +118,21 @@ class PostponedArgumentsAnalyzer(
             return ReturnArgumentsAnalysisResult(lambda.returnStatements, additionalConstraints = null)
         }
 
-        val additionalBindings: Map<TypeConstructorMarker, KotlinTypeMarker>? =
+        val additionalBinding: Pair<TypeConstructorMarker, KotlinTypeMarker>? =
             (resolutionContext.bodyResolveContext.inferenceSession as? FirPCLAInferenceSession)?.let { pclaInferenceSession ->
                 // TODO: Fix variables for context receivers, too (KT-64859)
-                buildMap {
-                    lambda.receiver
-                        ?.let { pclaInferenceSession.fixCurrentResultIfTypeVariableAndReturnBinding(it, candidate.system) }
-                        ?.let(this::plusAssign)
-                }
+                lambda.receiverType
+                    ?.let { pclaInferenceSession.semiFixCurrentResultIfTypeVariableAndReturnBinding(it, candidate.system) }
             }
 
-        val unitType = components.session.builtinTypes.unitType.type
-        val currentSubstitutor = c.buildCurrentSubstitutor(additionalBindings ?: emptyMap()) as ConeSubstitutor
+        val unitType = components.session.builtinTypes.unitType.coneType
+        val currentSubstitutor = c.buildCurrentSubstitutor(additionalBinding) as ConeSubstitutor
 
         fun substitute(type: ConeKotlinType) = currentSubstitutor.safeSubstitute(c, type) as ConeKotlinType
 
-        val receiver = lambda.receiver?.let(::substitute)
-        val contextReceivers = lambda.contextReceivers.map(::substitute)
-        val parameters = lambda.parameters.map(::substitute)
+        val receiver = lambda.receiverType?.let(::substitute)
+        val contextReceivers = lambda.contextReceiverTypes.map(::substitute)
+        val parameters = lambda.parameterTypes.map(::substitute)
         val rawReturnType = lambda.returnType
 
         val expectedTypeForReturnArguments = when {
@@ -189,7 +186,7 @@ class PostponedArgumentsAnalyzer(
         val returnTypeRef = lambda.anonymousFunction.returnTypeRef.let {
             it as? FirResolvedTypeRef ?: it.resolvedTypeFromPrototype(substituteAlreadyFixedVariables(lambda.returnType))
         }
-        val isUnitLambda = returnTypeRef.type.isUnitOrFlexibleUnit || lambda.anonymousFunction.shouldReturnUnit(returnArguments)
+        val isUnitLambda = returnTypeRef.coneType.isUnitOrFlexibleUnit || lambda.anonymousFunction.shouldReturnUnit(returnArguments)
 
         for (atom in returnAtoms) {
             val expression = atom.expression
@@ -216,7 +213,7 @@ class PostponedArgumentsAnalyzer(
                     // }
                     // See KT-63602 for details.
                     builder.addSubtypeConstraintIfCompatible(
-                        expression.resolvedType, returnTypeRef.type,
+                        expression.resolvedType, returnTypeRef.coneType,
                         ConeLambdaArgumentConstraintPosition(lambda.anonymousFunction)
                     )
                 }
@@ -258,7 +255,7 @@ class PostponedArgumentsAnalyzer(
         if (with(c) { lambdaReturnType.isError() } || builder.hasContradiction) return
 
         val position = ConeLambdaArgumentConstraintPosition(lambda.anonymousFunction)
-        val unitType = components.session.builtinTypes.unitType.type
+        val unitType = components.session.builtinTypes.unitType.coneType
         if (!builder.addSubtypeConstraintIfCompatible(
                 unitType,
                 lambdaReturnType,

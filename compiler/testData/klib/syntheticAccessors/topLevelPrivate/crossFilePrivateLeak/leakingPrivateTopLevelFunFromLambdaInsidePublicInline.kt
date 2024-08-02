@@ -1,4 +1,4 @@
-// IGNORE_BACKEND: JS_IR
+// IDENTICAL_KLIB_SYNTHETIC_ACCESSOR_DUMPS
 
 // FILE: A.kt
 private fun privateMethod() = "OK"

@@ -44,7 +44,9 @@ internal object CheckCallableReferenceExpectedType : ResolutionStage() {
         if (candidate.symbol !is FirCallableSymbol<*>) return
 
         val resultingReceiverType = when (callInfo.lhs) {
-            is DoubleColonLHS.Type -> callInfo.lhs.type.takeIf { callInfo.explicitReceiver !is FirResolvedQualifier }
+            is DoubleColonLHS.Type -> callInfo.lhs.type.takeIf {
+                callInfo.explicitReceiver?.unwrapSmartcastExpression() !is FirResolvedQualifier
+            }
             else -> null
         }
 
@@ -158,11 +160,11 @@ private fun buildResultingTypeAndAdaptation(
                 //     - see testData/diagnostics/tests/inference/callableReferences/conversionLastStatementInLambda.kt
                 val hasSyntheticOuterCall = candidate.callInfo.hasSyntheticOuterCall
                 if (callableReferenceAdaptation.coercionStrategy != CoercionStrategy.COERCION_TO_UNIT ||
-                    hasSyntheticOuterCall && returnTypeWithoutCoercion.unwrapFlexibleAndDefinitelyNotNull() is ConeTypeParameterType
+                    hasSyntheticOuterCall && returnTypeWithoutCoercion.unwrapToSimpleTypeUsingLowerBound() is ConeTypeParameterType
                 ) {
                     returnTypeWithoutCoercion
                 } else {
-                    context.session.builtinTypes.unitType.type
+                    context.session.builtinTypes.unitType.coneType
                 }
             }
 
@@ -179,7 +181,7 @@ private fun buildResultingTypeAndAdaptation(
             ) to callableReferenceAdaptation
         }
         is FirVariable -> {
-            val returnType = returnTypeRef.type
+            val returnType = returnTypeRef.coneType
             val isMutable = fir.canBeMutableReference(candidate)
             val propertyType = when {
                 isMutable && returnType.hasCapture() ->

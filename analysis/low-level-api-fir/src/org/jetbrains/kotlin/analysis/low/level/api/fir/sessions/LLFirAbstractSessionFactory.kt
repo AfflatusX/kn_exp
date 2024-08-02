@@ -41,9 +41,7 @@ import org.jetbrains.kotlin.assignment.plugin.AssignmentConfigurationKeys
 import org.jetbrains.kotlin.assignment.plugin.k2.FirAssignmentPluginExtensionRegistrar
 import org.jetbrains.kotlin.cli.plugins.processCompilerPluginsOptions
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.LanguageFeature
-import org.jetbrains.kotlin.config.LanguageVersionSettings
+import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.fir.BuiltinTypes
 import org.jetbrains.kotlin.fir.PrivateSessionConstructor
 import org.jetbrains.kotlin.fir.SessionConfiguration
@@ -76,7 +74,6 @@ import org.jetbrains.kotlin.utils.exceptions.withPsiEntry
 import org.jetbrains.kotlin.utils.exceptions.withVirtualFileEntry
 import kotlin.script.experimental.host.ScriptingHostConfiguration
 import kotlin.script.experimental.jvm.defaultJvmScriptingHostConfiguration
-import org.jetbrains.kotlin.fir.session.FirSessionFactoryHelper.registerDefaultComponents
 import org.jetbrains.kotlin.scripting.compiler.plugin.impl.makeScriptCompilerArguments
 
 @OptIn(PrivateSessionConstructor::class, SessionConfiguration::class)
@@ -604,6 +601,13 @@ internal abstract class LLFirAbstractSessionFactory(protected val project: Proje
 
     private fun wrapLanguageVersionSettings(original: LanguageVersionSettings): LanguageVersionSettings {
         return object : LanguageVersionSettings by original {
+
+            override fun <T> getFlag(flag: AnalysisFlag<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                if (flag == JvmAnalysisFlags.suppressMissingBuiltinsError) return true as T
+                return original.getFlag(flag)
+            }
+
             override fun getFeatureSupport(feature: LanguageFeature): LanguageFeature.State {
                 return when (feature) {
                     LanguageFeature.EnableDfaWarningsInK2 -> LanguageFeature.State.ENABLED

@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.fir.analysis.diagnostics.jvm
 
 import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.config.LanguageFeature.ForbidJvmAnnotationsOnAnnotationParameters
 import org.jetbrains.kotlin.config.LanguageFeature.ProhibitConcurrentHashMapContains
 import org.jetbrains.kotlin.config.LanguageFeature.ProhibitJvmOverloadsOnConstructorsOfAnnotationClasses
 import org.jetbrains.kotlin.config.LanguageFeature.ProhibitSpreadOnSignaturePolymorphicCall
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.diagnostics.Severity.WARNING
 import org.jetbrains.kotlin.diagnostics.SourceElementPositioningStrategies
 import org.jetbrains.kotlin.diagnostics.rendering.RootDiagnosticRendererFactory
 import org.jetbrains.kotlin.fir.analysis.diagnostics.*
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
@@ -75,6 +77,7 @@ object FirJvmErrors {
     val STRICTFP_ON_CLASS: KtDiagnosticFactory0 = KtDiagnosticFactory0("STRICTFP_ON_CLASS", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val SYNCHRONIZED_ON_ABSTRACT: KtDiagnosticFactory0 = KtDiagnosticFactory0("SYNCHRONIZED_ON_ABSTRACT", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val SYNCHRONIZED_IN_INTERFACE: KtDiagnosticFactory0 = KtDiagnosticFactory0("SYNCHRONIZED_IN_INTERFACE", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
+    val SYNCHRONIZED_IN_ANNOTATION: KtDiagnosticFactoryForDeprecation0 = KtDiagnosticFactoryForDeprecation0("SYNCHRONIZED_IN_ANNOTATION", ForbidJvmAnnotationsOnAnnotationParameters, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val SYNCHRONIZED_ON_INLINE: KtDiagnosticFactory0 = KtDiagnosticFactory0("SYNCHRONIZED_ON_INLINE", WARNING, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val SYNCHRONIZED_ON_VALUE_CLASS: KtDiagnosticFactoryForDeprecation0 = KtDiagnosticFactoryForDeprecation0("SYNCHRONIZED_ON_VALUE_CLASS", ProhibitSynchronizationByValueClassesAndPrimitives, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val SYNCHRONIZED_ON_SUSPEND: KtDiagnosticFactoryForDeprecation0 = KtDiagnosticFactoryForDeprecation0("SYNCHRONIZED_ON_SUSPEND", SynchronizedSuspendError, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
@@ -93,6 +96,7 @@ object FirJvmErrors {
 
     // Super
     val INTERFACE_CANT_CALL_DEFAULT_METHOD_VIA_SUPER: KtDiagnosticFactory0 = KtDiagnosticFactory0("INTERFACE_CANT_CALL_DEFAULT_METHOD_VIA_SUPER", ERROR, SourceElementPositioningStrategies.REFERENCE_BY_QUALIFIED, PsiElement::class)
+    val JAVA_CLASS_INHERITS_KT_PRIVATE_CLASS: KtDiagnosticFactory2<ClassId, ConeKotlinType> = KtDiagnosticFactory2("JAVA_CLASS_INHERITS_KT_PRIVATE_CLASS", ERROR, SourceElementPositioningStrategies.DEFAULT, KtElement::class)
 
     // JVM Records
     val LOCAL_JVM_RECORD: KtDiagnosticFactory0 = KtDiagnosticFactory0("LOCAL_JVM_RECORD", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
@@ -151,6 +155,7 @@ object FirJvmErrors {
     val NO_REFLECTION_IN_CLASS_PATH: KtDiagnosticFactory0 = KtDiagnosticFactory0("NO_REFLECTION_IN_CLASS_PATH", WARNING, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
     val SYNTHETIC_PROPERTY_WITHOUT_JAVA_ORIGIN: KtDiagnosticFactory2<FirNamedFunctionSymbol, Name> = KtDiagnosticFactory2("SYNTHETIC_PROPERTY_WITHOUT_JAVA_ORIGIN", WARNING, SourceElementPositioningStrategies.REFERENCED_NAME_BY_QUALIFIED, PsiElement::class)
     val JAVA_FIELD_SHADOWED_BY_KOTLIN_PROPERTY: KtDiagnosticFactory1<FirPropertySymbol> = KtDiagnosticFactory1("JAVA_FIELD_SHADOWED_BY_KOTLIN_PROPERTY", ERROR, SourceElementPositioningStrategies.REFERENCED_NAME_BY_QUALIFIED, PsiElement::class)
+    val MISSING_BUILT_IN_DECLARATION: KtDiagnosticFactory1<FirBasedSymbol<*>> = KtDiagnosticFactory1("MISSING_BUILT_IN_DECLARATION", ERROR, SourceElementPositioningStrategies.REFERENCED_NAME_BY_QUALIFIED, PsiElement::class)
 
     init {
         RootDiagnosticRendererFactory.registerFactory(FirJvmErrorsDefaultMessages)

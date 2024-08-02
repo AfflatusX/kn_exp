@@ -149,6 +149,12 @@ public class Fe10IdeNormalAnalysisSourceModuleSymbolByReferenceTestGenerated ext
   }
 
   @Test
+  @TestMetadata("javaNestedAnnotation.kt")
+  public void testJavaNestedAnnotation() {
+    runTest("analysis/analysis-api/testData/symbols/symbolByReference/javaNestedAnnotation.kt");
+  }
+
+  @Test
   @TestMetadata("javaStaticField.kt")
   public void testJavaStaticField() {
     runTest("analysis/analysis-api/testData/symbols/symbolByReference/javaStaticField.kt");
@@ -296,6 +302,12 @@ public class Fe10IdeNormalAnalysisSourceModuleSymbolByReferenceTestGenerated ext
   @TestMetadata("libraryVariableWithAnnotations.kt")
   public void testLibraryVariableWithAnnotations() {
     runTest("analysis/analysis-api/testData/symbols/symbolByReference/libraryVariableWithAnnotations.kt");
+  }
+
+  @Test
+  @TestMetadata("nestedAnnotation.kt")
+  public void testNestedAnnotation() {
+    runTest("analysis/analysis-api/testData/symbols/symbolByReference/nestedAnnotation.kt");
   }
 
   @Test
@@ -471,6 +483,12 @@ public class Fe10IdeNormalAnalysisSourceModuleSymbolByReferenceTestGenerated ext
     @Test
     public void testAllFilesPresentInWithTestCompilerPluginEnabled() {
       KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("analysis/analysis-api/testData/symbols/symbolByReference/withTestCompilerPluginEnabled"), Pattern.compile("^(.+)\\.kt$"), null, true);
+    }
+
+    @Test
+    @TestMetadata("composableFunctionInCommonModule.kt")
+    public void testComposableFunctionInCommonModule() {
+      runTest("analysis/analysis-api/testData/symbols/symbolByReference/withTestCompilerPluginEnabled/composableFunctionInCommonModule.kt");
     }
 
     @Test

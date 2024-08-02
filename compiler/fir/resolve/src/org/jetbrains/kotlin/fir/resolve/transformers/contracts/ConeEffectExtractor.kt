@@ -16,11 +16,9 @@ import org.jetbrains.kotlin.fir.references.FirNamedReference
 import org.jetbrains.kotlin.fir.resolve.diagnostics.ConeContractDescriptionError
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.getContainingClass
-import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.resolvedType
-import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.resolve.toTypeParameterSymbol
 import org.jetbrains.kotlin.fir.visitors.FirDefaultVisitor
 import org.jetbrains.kotlin.name.CallableId
@@ -112,13 +110,13 @@ class ConeEffectExtractor(
         }
     }
 
-    override fun visitBinaryLogicExpression(
-        binaryLogicExpression: FirBinaryLogicExpression,
+    override fun visitBooleanOperatorExpression(
+        booleanOperatorExpression: FirBooleanOperatorExpression,
         data: Nothing?
     ): ConeContractDescriptionElement {
-        val left = binaryLogicExpression.leftOperand.asContractBooleanExpression()
-        val right = binaryLogicExpression.rightOperand.asContractBooleanExpression()
-        return ConeBinaryLogicExpression(left, right, binaryLogicExpression.kind)
+        val left = booleanOperatorExpression.leftOperand.asContractBooleanExpression()
+        val right = booleanOperatorExpression.rightOperand.asContractBooleanExpression()
+        return ConeBinaryLogicExpression(left, right, booleanOperatorExpression.kind)
     }
 
     override fun visitEqualityOperatorCall(equalityOperatorCall: FirEqualityOperatorCall, data: Nothing?): ConeContractDescriptionElement {
@@ -176,7 +174,7 @@ class ConeEffectExtractor(
         index: Int,
         name: String
     ): ConeValueParameterReference {
-        return if (type == session.builtinTypes.booleanType.type) {
+        return if (type == session.builtinTypes.booleanType.coneType) {
             ConeBooleanValueParameterReference(index, name)
         } else {
             ConeValueParameterReference(index, name)

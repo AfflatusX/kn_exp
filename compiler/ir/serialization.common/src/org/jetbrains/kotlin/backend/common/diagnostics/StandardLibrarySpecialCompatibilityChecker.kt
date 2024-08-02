@@ -10,6 +10,11 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 import org.jetbrains.kotlin.config.MavenComparableVersion
 import org.jetbrains.kotlin.library.KotlinLibrary
+import org.jetbrains.kotlin.library.impl.KotlinLibraryImpl
+import java.io.ByteArrayInputStream
+import java.io.IOException
+import java.util.jar.Manifest
+import org.jetbrains.kotlin.konan.file.File as KFile
 
 /** See KT-68322 for details. */
 abstract class StandardLibrarySpecialCompatibilityChecker {
@@ -41,7 +46,8 @@ abstract class StandardLibrarySpecialCompatibilityChecker {
 
         for (library in libraries) {
             if (isStdlib(library)) {
-                val stdlibVersion = Version.parseVersion(library.versions.compilerVersion) ?: return
+                val jarManifest = library.getJarManifest() ?: return
+                val stdlibVersion = Version.parseVersion(jarManifest.mainAttributes.getValue(KLIB_JAR_LIBRARY_VERSION)) ?: return
 
                 val messageToReport = getMessageToReport(compilerVersion, stdlibVersion)
                 if (messageToReport != null) {
@@ -53,6 +59,18 @@ abstract class StandardLibrarySpecialCompatibilityChecker {
         }
     }
 
+    private fun KotlinLibrary.getJarManifest(): Manifest? {
+        val libraryAccess = (this as KotlinLibraryImpl).base.access
+        val jarManifestFile: KFile = libraryAccess.inPlace { it.libFile.child(KLIB_JAR_MANIFEST_FILE) }
+        if (!jarManifestFile.isFile) return null
+
+        return try {
+            ByteArrayInputStream(jarManifestFile.readBytes()).use { Manifest(it) }
+        } catch (e: IOException) {
+            null
+        }
+    }
+
     private fun getRawCompilerVersion(): String? {
         return customCompilerVersionForTest?.let { return it.version } ?: KotlinCompilerVersion.getVersion()
     }
@@ -60,18 +78,22 @@ abstract class StandardLibrarySpecialCompatibilityChecker {
     protected abstract fun isStdlib(library: KotlinLibrary): Boolean
     protected abstract fun getMessageToReport(compilerVersion: Version, stdlibVersion: Version): String?
 
-    @Deprecated("Only for test purposes, use with care!")
     companion object {
         private class CustomCompilerVersionForTest(val version: String?)
 
         private var customCompilerVersionForTest: CustomCompilerVersionForTest? = null
 
+        @Deprecated("Only for test purposes, use with care!")
         fun setUpCustomCompilerVersionForTest(compilerVersion: String?) {
             customCompilerVersionForTest = CustomCompilerVersionForTest(compilerVersion)
         }
 
+        @Deprecated("Only for test purposes, use with care!")
         fun resetUpCustomCompilerVersionForTest() {
             customCompilerVersionForTest = null
         }
+
+        const val KLIB_JAR_MANIFEST_FILE = "META-INF/MANIFEST.MF"
+        const val KLIB_JAR_LIBRARY_VERSION = "Implementation-Version"
     }
 }
