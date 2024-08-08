@@ -21,13 +21,17 @@ import org.jetbrains.kotlin.fir.diagnostics.DiagnosticKind
 import org.jetbrains.kotlin.fir.expressions.FirQualifiedAccessExpression
 import org.jetbrains.kotlin.fir.expressions.calleeReference
 import org.jetbrains.kotlin.fir.expressions.unwrapLValue
+import org.jetbrains.kotlin.fir.packageFqName
 import org.jetbrains.kotlin.fir.references.toResolvedVariableSymbol
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph.Kind
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
+import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
 import org.jetbrains.kotlin.fir.types.resolvedType
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 abstract class VariableInitializationCheckProcessor {
     fun check(
@@ -94,14 +98,20 @@ abstract class VariableInitializationCheckProcessor {
         context: CheckerContext,
         reporter: DiagnosticReporter,
     ) {
-        fun CFGNode<*>.reportErrorsOnInitializationsInInputs(symbol: FirVariableSymbol<*>, path: EdgeLabel) {
+        fun CFGNode<*>.reportErrorsOnInitializationsInInputs(
+            symbol: FirVariableSymbol<*>,
+            path: EdgeLabel,
+            visited: MutableSet<CFGNode<*>>,
+        ) {
+            require(visited.add(this)) { buildRecursionErrorMessage(this, symbol, context) }
+
             for (previousNode in previousCfgNodes) {
                 if (edgeFrom(previousNode).kind.isBack) continue
                 when (val assignmentNode = getValue(previousNode)[path]?.get(symbol)?.location) {
                     is VariableDeclarationNode -> {} // unreachable - `val`s with initializers do not require hindsight
                     is VariableAssignmentNode -> reportCapturedInitialization(assignmentNode, symbol, reporter, context)
                     else -> // merge node for a branching construct, e.g. `if (p) { x = 1 } else { x = 2 }` - report on all branches
-                        assignmentNode?.reportErrorsOnInitializationsInInputs(symbol, path)
+                        assignmentNode?.reportErrorsOnInitializationsInInputs(symbol, path, visited)
                 }
             }
         }
@@ -113,7 +123,7 @@ abstract class VariableInitializationCheckProcessor {
                 // At each assignment it was only considered in isolation, but now that we're merging their control flows,
                 // we can see that the assignments clash, so we need to go back and emit errors on these nodes.
                 if (node.previousCfgNodes.all { getValue(it)[path]?.get(symbol)?.canBeRevisited() != true }) {
-                    node.reportErrorsOnInitializationsInInputs(symbol, path)
+                    node.reportErrorsOnInitializationsInInputs(symbol, path, visited = mutableSetOf())
                 }
             }
         }
@@ -299,3 +309,42 @@ private val FirVariableSymbol<*>.isLocal: Boolean
         is FirPropertySymbol -> isLocal
         else -> false
     }
+
+fun buildRecursionErrorMessage(
+    problemNode: CFGNode<*>,
+    symbol: FirVariableSymbol<*>,
+    context: CheckerContext,
+): String {
+    return buildString {
+        appendLine("Node has already been visited and could result in infinite recursion.")
+        appendLine()
+        append("File Path: ").appendLine(context.containingFilePath)
+        append("Variable: ").appendLine(symbol.getDebugFqName())
+        appendLine("Declarations:")
+        problemNode.firstGraphDeclaration()?.let { declaration ->
+            append("- ").append(declaration.symbol.getDebugFqName()).appendLine(" (graph declaration)")
+        }
+        for (declaration in context.containingDeclarations) {
+            append("- ").appendLine(declaration.symbol.getDebugFqName())
+        }
+    }
+}
+
+private fun CFGNode<*>.firstGraphDeclaration(): FirDeclaration? {
+    owner.declaration?.let { return it }
+    return owner.enterNode.previousNodes.firstNotNullOfOrNull { it.firstGraphDeclaration() }
+}
+
+@OptIn(SymbolInternals::class)
+private fun FirBasedSymbol<*>.getDebugFqName(): FqName {
+    return when (val fir = this.fir) {
+        is FirFile -> fir.packageFqName.child(Name.identifier(fir.name))
+        is FirScript -> fir.symbol.fqName
+        is FirClassLikeDeclaration -> fir.symbol.classId.asSingleFqName()
+        is FirTypeParameter -> fir.containingDeclarationSymbol.getDebugFqName().child(fir.name)
+        is FirAnonymousInitializer -> fir.containingDeclarationSymbol.getDebugFqName().child(Name.special("<init>"))
+        is FirCallableDeclaration -> fir.symbol.callableId.asFqNameForDebugInfo()
+        is FirCodeFragment -> FqName.topLevel(Name.special("<fragment>"))
+        is FirDanglingModifierList -> FqName.topLevel(Name.special("<dangling>"))
+    }
+}

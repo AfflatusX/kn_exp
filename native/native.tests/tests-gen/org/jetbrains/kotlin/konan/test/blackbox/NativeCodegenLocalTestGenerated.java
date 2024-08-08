@@ -60,6 +60,12 @@ public class NativeCodegenLocalTestGenerated extends AbstractNativeCodegenBoxTes
     public void testAssociatedObjects1_testGlobalOptimizations2() {
       runTest("native/native.tests/testData/codegen/associatedObjects/associatedObjects1_testGlobalOptimizations2.kt");
     }
+
+    @Test
+    @TestMetadata("associatedObjects_multiFile.kt")
+    public void testAssociatedObjects_multiFile() {
+      runTest("native/native.tests/testData/codegen/associatedObjects/associatedObjects_multiFile.kt");
+    }
   }
 
   @Nested
@@ -1004,6 +1010,12 @@ public class NativeCodegenLocalTestGenerated extends AbstractNativeCodegenBoxTes
     @TestMetadata("replace_invoke_with_call.kt")
     public void testReplace_invoke_with_call() {
       runTest("native/native.tests/testData/codegen/fileCheck/replace_invoke_with_call.kt");
+    }
+
+    @Test
+    @TestMetadata("runtime_attributes_compatible.kt")
+    public void testRuntime_attributes_compatible() {
+      runTest("native/native.tests/testData/codegen/fileCheck/runtime_attributes_compatible.kt");
     }
 
     @Test

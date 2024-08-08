@@ -5,7 +5,7 @@
 
 package org.jetbrains.kotlin.scripting.compiler.plugin
 
-import org.jetbrains.kotlin.cli.common.CLITool
+import org.jetbrains.kotlin.cli.common.CLICompiler
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
@@ -177,7 +177,7 @@ class ScriptingWithCliCompilerTest {
     @Test
     fun testExceptionWithCause() {
         val (_, err, _) = captureOutErrRet {
-            CLITool.doMainNoExit(
+            CLICompiler.doMainNoExit(
                 K2JVMCompiler(),
                 arrayOf(
                     "-script",
@@ -205,7 +205,7 @@ class ScriptingWithCliCompilerTest {
         fun compileVariant(vararg flags: String, withScriptInstance: Boolean = true): Pair<List<String>, ExitCode> {
             return withTempDir { tmpdir ->
                 val (_, err, exitCode) = captureOutErrRet {
-                    CLITool.doMainNoExit(
+                    CLICompiler.doMainNoExit(
                         K2JVMCompiler(),
                         arrayOf(
                             "-d", tmpdir.path,
@@ -264,7 +264,7 @@ class ScriptingWithCliCompilerTest {
         withTempDir { tmpdir ->
             val scriptPath = "$TEST_DATA_DIR/compiler/mixedCompilation/scriptAccessingNonScript.main.kts"
             val ret =
-                CLITool.doMainNoExit(
+                CLICompiler.doMainNoExit(
                     K2JVMCompiler(),
                     arrayOf(
                         "-P", "plugin:kotlin.scripting:disable-script-definitions-autoloading=true",
@@ -290,19 +290,21 @@ class ScriptingWithCliCompilerTest {
     fun testAccessScriptFromRegularSource() {
         withTempDir { tmpdir ->
             val (_, err, ret) = captureOutErrRet {
-                CLITool.doMainNoExit(
+                CLICompiler.doMainNoExit(
                     K2JVMCompiler(),
                     arrayOf(
                         "-P", "plugin:kotlin.scripting:disable-script-definitions-autoloading=true",
                         "-cp", getMainKtsClassPath().joinToString(File.pathSeparator), "-d", tmpdir.path,
                         "-Xuse-fir-lt=false",
+                        "-Xextended-compiler-checks",
                         "-Xallow-any-scripts-in-source-roots", "-verbose",
                         "$TEST_DATA_DIR/compiler/mixedCompilation/nonScriptAccessingScript.kt",
                         SIMPLE_TEST_SCRIPT
                     )
                 )
             }
-            println(err)
+            Assert.assertTrue("Expecting an error about unresolved 'SimpleScript_main', got:\n$err", err.contains("error: unresolved reference 'SimpleScript_main'"))
+            Assert.assertTrue("Expecting an error about unresolved 'ok', got:\n$err", err.contains("error: unresolved reference 'ok'"))
             Assert.assertEquals(ExitCode.COMPILATION_ERROR.code, ret.code)
         }
     }
@@ -313,7 +315,7 @@ class ScriptingWithCliCompilerTest {
 
             fun compileSuccessfullyGetStdErr(fileArg: String): List<String> {
                 val (_, err, ret) = captureOutErrRet {
-                    CLITool.doMainNoExit(
+                    CLICompiler.doMainNoExit(
                         K2JVMCompiler(),
                         arrayOf(
                             "-P", "plugin:kotlin.scripting:disable-script-definitions-autoloading=true",

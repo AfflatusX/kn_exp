@@ -191,7 +191,7 @@ class JsIrBackendContext(
             if (rhsType == null)
                 candidates.singleOrNull()
             else
-                candidates.singleOrNull { it.owner.valueParameters[0].type.cast<IrSimpleType>().classifier == rhsType.classifier }
+                candidates.singleOrNull { it.owner.valueParameters[0].type.classifierOrNull == rhsType.classifier }
         }
 
     override val coroutineSymbols =
@@ -291,7 +291,9 @@ class JsIrBackendContext(
             override val toUIntByExtensionReceiver: Map<IrClassifierSymbol, IrSimpleFunctionSymbol> by lazy(LazyThreadSafetyMode.NONE) {
                 toUIntSymbols.associateBy {
                     it.owner.extensionReceiverParameter?.type?.classifierOrFail
-                        ?: error("Expected extension receiver for ${it.owner.render()}")
+                        ?: irError("Expected extension receiver for") {
+                            withIrEntry("it.owner", it.owner)
+                        }
                 }
             }
 
@@ -300,7 +302,9 @@ class JsIrBackendContext(
             override val toULongByExtensionReceiver: Map<IrClassifierSymbol, IrSimpleFunctionSymbol> by lazy(LazyThreadSafetyMode.NONE) {
                 toULongSymbols.associateBy {
                     it.owner.extensionReceiverParameter?.type?.classifierOrFail
-                        ?: error("Expected extension receiver for ${it.owner.render()}")
+                        ?: irError("Expected extension receiver for") {
+                            withIrEntry("it.owner", it.owner)
+                        }
                 }
             }
         }
@@ -398,24 +402,22 @@ class JsIrBackendContext(
 
     private val outlinedJsCodeFunctions = WeakHashMap<IrFunctionSymbol, JsFunction>()
 
-    fun addOutlinedJsCode(symbol: IrSimpleFunctionSymbol, outlinedJsCode: JsFunction) {
-        outlinedJsCodeFunctions[symbol] = outlinedJsCode
-    }
-
     fun getJsCodeForFunction(symbol: IrFunctionSymbol): JsFunction? {
-        val jsFunction = outlinedJsCodeFunctions[symbol]
+        val originalSymbol = symbol.owner.originalFunction.symbol
+        val jsFunction = outlinedJsCodeFunctions[originalSymbol]
         if (jsFunction != null) return jsFunction
-        val jsFunAnnotation = symbol.owner.getAnnotation(JsAnnotations.jsFunFqn) ?: return null
+
+        val jsFunAnnotation = originalSymbol.owner.getAnnotation(JsAnnotations.jsFunFqn) ?: return null
         val jsCode = jsFunAnnotation.getValueArgument(0)
             ?: compilationException("@JsFun annotation must contain an argument", jsFunAnnotation)
-        val statements = translateJsCodeIntoStatementList(jsCode, this, symbol.owner)
+        val statements = translateJsCodeIntoStatementList(jsCode, this, originalSymbol.owner)
             ?: compilationException("Could not parse JS code", jsFunAnnotation)
         val parsedJsFunction = statements.singleOrNull()
             ?.safeAs<JsExpressionStatement>()
             ?.expression
             ?.safeAs<JsFunction>()
             ?: compilationException("Provided JS code is not a js function", jsFunAnnotation)
-        outlinedJsCodeFunctions[symbol] = parsedJsFunction
+        outlinedJsCodeFunctions[originalSymbol] = parsedJsFunction
         return parsedJsFunction
     }
 

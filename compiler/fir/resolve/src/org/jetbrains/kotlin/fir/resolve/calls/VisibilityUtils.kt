@@ -41,7 +41,7 @@ fun FirVisibilityChecker.isVisible(
                 declaration.isStatic &&
                 isExplicitReceiverExpression(dispatchReceiver)
     ) {
-        when (val classLikeSymbol = (dispatchReceiver as? FirResolvedQualifier)?.symbol) {
+        when (val classLikeSymbol = (dispatchReceiver?.unwrapSmartcastExpression() as? FirResolvedQualifier)?.symbol) {
             is FirRegularClassSymbol -> classLikeSymbol.fir
             is FirTypeAliasSymbol -> classLikeSymbol.fullyExpandedClass(callInfo.session)?.fir
             is FirAnonymousObjectSymbol,
@@ -143,7 +143,7 @@ private fun removeSmartCastTypeForAttemptToFitVisibility(dispatchReceiver: FirEx
                     this.originalExpression = originalExpression
                     smartcastType = buildResolvedTypeRef {
                         source = originalExpression.source?.fakeElement(KtFakeSourceElementKind.SmartCastedTypeRef)
-                        type = originalTypeNotNullable
+                        coneType = originalTypeNotNullable
                     }
                     typesFromSmartCast = listOf(originalTypeNotNullable)
                     smartcastStability = expressionWithSmartcastIfStable.smartcastStability

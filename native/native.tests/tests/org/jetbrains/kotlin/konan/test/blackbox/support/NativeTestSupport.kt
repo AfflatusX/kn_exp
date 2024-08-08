@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.test.directives.model.RegisteredDirectives
 import org.jetbrains.kotlin.test.services.JUnit5Assertions.assertEquals
 import org.jetbrains.kotlin.test.services.JUnit5Assertions.fail
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
-import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -94,23 +94,42 @@ class SwiftExportTestSupport : BeforeEachCallback {
     }
 }
 
+/**
+ * Used to run tests for IR inlining and synthetic accessors. This test helper effectively does the following:
+ * - Enables IR visibility validation.
+ * - Disables LLVM-related phases, so the compilation effectively ends at the last IR lowering.
+ * - Enables experimental double inlining mode.
+ *
+ * TODO(KT-64570): Migrate these tests to the Core test infrastructure as soon as we move IR inlining to the 1st compilation stage.
+ */
 class KlibSyntheticAccessorTestSupport : BeforeEachCallback {
     override fun beforeEach(extensionContext: ExtensionContext): Unit = with(extensionContext) {
-        val settings = createTestRunSettings(computeKlibSyntheticAccessorTestInstances()) {
-            +CodegenTestDirectives.ENABLE_IR_VISIBILITY_CHECKS_AFTER_INLINING
+        val nativeTestInstances = computeKlibSyntheticAccessorTestInstances()
+        val settings = createTestRunSettings(nativeTestInstances) {
+            with(RegisteredDirectivesBuilder()) {
+                +CodegenTestDirectives.ENABLE_IR_VISIBILITY_CHECKS_AFTER_INLINING
+                +CodegenTestDirectives.DUMP_KLIB_SYNTHETIC_ACCESSORS
 
-            // Don't run LLVM, stop after the last IR lowering.
-            TestDirectives.FREE_COMPILER_ARGS with listOf(
-                "-Xdisable-phases=LinkBitcodeDependencies,WriteBitcodeFile,ObjectFiles,Linker",
-                "-Xklib-double-inlining"
-            )
+                TestDirectives.FREE_COMPILER_ARGS with listOfNotNull(
+                    // Don't run LLVM, stop after the last IR lowering.
+                    "-Xdisable-phases=LinkBitcodeDependencies,WriteBitcodeFile,ObjectFiles,Linker",
+
+                    // Enable double-inlining.
+                    "-Xklib-double-inlining",
+
+                    // Enable narrowing of visibility for synthetic accessors.
+                    "-Xsynthetic-accessors-with-narrowed-visibility".takeIf { nativeTestInstances.enclosingTestInstance.narrowedAccessorVisibility }
+                )
+
+                build()
+            }
         }
 
-        Assumptions.assumeTrue(settings.get<CacheMode>() == CacheMode.WithoutCache)
-        Assumptions.assumeTrue(settings.get<ThreadStateChecker>() == ThreadStateChecker.DISABLED)
+        assumeTrue(settings.get<CacheMode>() == CacheMode.WithoutCache)
+        assumeTrue(settings.get<ThreadStateChecker>() == ThreadStateChecker.DISABLED)
 
         // Inject the required properties to test instance.
-        with(settings.get<NativeTestInstances<AbstractNativeKlibSyntheticAccessorTest>>().enclosingTestInstance) {
+        with(nativeTestInstances.enclosingTestInstance) {
             testRunSettings = settings
             testRunProvider = getOrCreateTestRunProvider()
         }
@@ -359,8 +378,6 @@ object NativeTestSupport {
         return if (defaultCache == CacheMode.Alias.NO)
             CacheMode.WithoutCache
         else CacheMode.WithStaticCache(
-            distribution,
-            kotlinNativeTargets,
             optimizationMode,
             useStaticCacheForUserLibraries,
             makePerFileCaches,
@@ -442,9 +459,7 @@ object NativeTestSupport {
 
     /*************** Test class settings (for black box tests only) ***************/
 
-    private fun ExtensionContext.getOrCreateTestClassSettings(
-        defaultTestDirectives: RegisteredDirectives = RegisteredDirectives.Empty
-    ): TestClassSettings =
+    private fun ExtensionContext.getOrCreateTestClassSettings(): TestClassSettings =
         root.getStore(NAMESPACE).getOrComputeIfAbsent(testClassKeyFor<TestClassSettings>()) {
             val enclosingTestClass = enclosingTestClass
 
@@ -479,8 +494,6 @@ object NativeTestSupport {
                         else -> fail { "Unknown test class setting type: $clazz" }
                     }
                 }
-
-                this += RegisteredDirectives::class to defaultTestDirectives
             }
 
             TestClassSettings(parent = testProcessSettings, settings)
@@ -643,13 +656,16 @@ object NativeTestSupport {
     // Note: TestRunSettings is not cached!
     fun ExtensionContext.createTestRunSettings(
         testInstances: NativeTestInstances<*>,
-        defaultTestDirectiveBuilder: RegisteredDirectivesBuilder.() -> Unit = {},
+        defaultDirectives: ((TestClassSettings) -> RegisteredDirectives) = { RegisteredDirectives.Empty },
     ): TestRunSettings {
+        val testClassSettings = getOrCreateTestClassSettings()
+
         return TestRunSettings(
-            parent = getOrCreateTestClassSettings(RegisteredDirectivesBuilder().apply(defaultTestDirectiveBuilder).build()),
+            parent = testClassSettings,
             listOfNotNull(
                 testInstances,
-                testInstances.externalSourceTransformersProvider?.let { ExternalSourceTransformersProvider::class to it }
+                testInstances.externalSourceTransformersProvider?.let { ExternalSourceTransformersProvider::class to it },
+                RegisteredDirectives::class to defaultDirectives(testClassSettings)
             )
         )
     }
@@ -666,7 +682,9 @@ object NativeTestSupport {
     /*************** Test run settings (simplified) ***************/
 
     // Note: SimpleTestRunSettings is not cached!
-    fun ExtensionContext.createSimpleTestRunSettings(): SimpleTestRunSettings {
+    fun ExtensionContext.createSimpleTestRunSettings(
+        defaultDirectives: ((SimpleTestClassSettings) -> RegisteredDirectives) = { RegisteredDirectives.Empty },
+    ): SimpleTestRunSettings {
         val testClassSettings = getOrCreateSimpleTestClassSettings()
 
         return SimpleTestRunSettings(
@@ -674,6 +692,7 @@ object NativeTestSupport {
             listOf(
                 computeSimpleTestInstances(),
                 computeBinariesForSimpleTests(testClassSettings.get(), testClassSettings.get()),
+                RegisteredDirectives::class to defaultDirectives(testClassSettings)
             )
         )
     }

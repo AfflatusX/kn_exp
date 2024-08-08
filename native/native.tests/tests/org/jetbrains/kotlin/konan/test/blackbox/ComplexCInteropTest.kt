@@ -93,10 +93,7 @@ abstract class ComplexCInteropTestBase : AbstractNativeSimpleTest() {
     @Test
     @TestMetadata("smoke.kt")
     fun testInteropObjCSmokeGC() {
-        Assumptions.assumeTrue(
-            testRunSettings.get<GCType>() != GCType.NOOP
-                    || testRunSettings.get<CacheMode>() != CacheMode.WithoutCache // TODO: Remove line after fix of KT-63944
-        )
+        Assumptions.assumeTrue(testRunSettings.get<GCType>() != GCType.NOOP)
         testInteropObjCSmoke("smoke")
     }
 
@@ -104,7 +101,6 @@ abstract class ComplexCInteropTestBase : AbstractNativeSimpleTest() {
     @TestMetadata("smoke_noopgc.kt")
     fun testInteropObjCSmokeNoopGC() {
         Assumptions.assumeTrue(testRunSettings.get<GCType>() == GCType.NOOP)
-        Assumptions.assumeTrue(testRunSettings.get<CacheMode>() == CacheMode.WithoutCache) // TODO: Remove line after fix of KT-63944
         testInteropObjCSmoke("smoke_noopgc")
     }
 
@@ -495,5 +491,34 @@ abstract class ComplexCInteropTestBase : AbstractNativeSimpleTest() {
         )
         val compilationResult = compileToExecutableInOneStage(testCase).assertSuccess()
         runExecutableAndVerify(testCase, TestExecutable.fromCompilationResult(testCase, compilationResult))
+    }
+
+    @Test
+    @TestMetadata("safepointSignposts")
+    fun safepointSignposts() {
+        Assumptions.assumeTrue(targets.testTarget.family.isAppleFamily)
+        Assumptions.assumeFalse(targets.areDifferentTargets())
+
+        val srcDir = interopObjCDir.resolve("safepointSignposts")
+        compileDylib("cinterop", listOf(srcDir.resolve("cinterop.m")))
+
+        val (testCase, compilationResult) = compileDefAndKtToExecutable(
+            testName = "safepointSignposts",
+            defFile = srcDir.resolve("cinterop.def"),
+            ktFiles = listOf(srcDir.resolve("main.kt")),
+            freeCompilerArgs = TestCompilerArgs(
+                compilerArgs = listOf(
+                    "-opt-in=kotlinx.cinterop.ExperimentalForeignApi",
+                    "-linker-option", "-L${buildDir.absolutePath}",
+                )
+            ),
+            extras = TestCase.NoTestRunnerExtras(),
+        )
+        val process = ProcessBuilder("/usr/bin/log", "stream", "--signpost").start()
+        try {
+            runExecutableAndVerify(testCase, TestExecutable.fromCompilationResult(testCase, compilationResult))
+        } finally {
+            process.destroyForcibly()
+        }
     }
 }

@@ -47,13 +47,12 @@ sealed class ClangArgs(
                 "NO_UNALIGNED_ACCESS".takeUnless { target.supportsUnalignedAccess() },
                 "FORBID_BUILTIN_MUL_OVERFLOW".takeUnless { target.supports64BitMulOverflow() },
 
-                "OBJC_INTEROP".takeIf { target.supportsObjcInterop() },
-                "HAS_FOUNDATION_FRAMEWORK".takeIf { target.hasFoundationFramework() },
-                "HAS_UIKIT_FRAMEWORK".takeIf { target.hasUIKitFramework() },
-                "REPORT_BACKTRACE_TO_IOS_CRASH_LOG".takeIf { target.supportsIosCrashLog() },
-                "NEED_SMALL_BINARY".takeIf { target.needSmallBinary() },
-                "SUPPORTS_GRAND_CENTRAL_DISPATCH".takeIf { target.supportsGrandCentralDispatch },
-                "SUPPORTS_SIGNPOSTS".takeIf { target.supportsSignposts },
+                    "OBJC_INTEROP".takeIf { target.supportsObjcInterop() },
+                    "HAS_FOUNDATION_FRAMEWORK".takeIf { target.hasFoundationFramework() },
+                    "HAS_UIKIT_FRAMEWORK".takeIf { target.hasUIKitFramework() },
+                    "REPORT_BACKTRACE_TO_IOS_CRASH_LOG".takeIf { target.supportsIosCrashLog() },
+                    "SUPPORTS_GRAND_CENTRAL_DISPATCH".takeIf { target.supportsGrandCentralDispatch },
+                    "SUPPORTS_SIGNPOSTS".takeIf { target.supportsSignposts },
             ).map { "KONAN_$it=1" }
             val otherOptions = listOfNotNull(
                     "USE_ELF_SYMBOLS=1".takeIf { target.binaryFormat() == BinaryFormat.ELF },

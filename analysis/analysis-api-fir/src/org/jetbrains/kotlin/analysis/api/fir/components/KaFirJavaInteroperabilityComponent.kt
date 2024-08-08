@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.analysis.api.fir.KaFirSession
 import org.jetbrains.kotlin.analysis.api.fir.findPsi
 import org.jetbrains.kotlin.analysis.api.fir.getJvmNameFromAnnotation
 import org.jetbrains.kotlin.analysis.api.fir.symbols.KaFirPsiJavaClassSymbol
+import org.jetbrains.kotlin.analysis.api.fir.symbols.KaFirReceiverParameterSymbol
 import org.jetbrains.kotlin.analysis.api.fir.symbols.KaFirSymbol
 import org.jetbrains.kotlin.analysis.api.fir.symbols.KaFirSyntheticJavaPropertySymbol
 import org.jetbrains.kotlin.analysis.api.fir.types.KaFirType
@@ -91,7 +92,8 @@ internal class KaFirJavaInteroperabilityComponent(
         mode: KaTypeMappingMode,
         isAnnotationMethod: Boolean,
         suppressWildcards: Boolean?,
-        preserveAnnotations: Boolean
+        preserveAnnotations: Boolean,
+        forceValueClassResolution: Boolean,
     ): PsiType? = withValidityAssertion {
         val coneType = this.coneType
 
@@ -108,6 +110,7 @@ internal class KaFirJavaInteroperabilityComponent(
             mode = mode.toTypeMappingMode(this, isAnnotationMethod, suppressWildcards),
             useSitePosition = useSitePosition,
             allowErrorTypes = allowErrorTypes,
+            forceValueClassResolution = forceValueClassResolution,
         ) ?: return null
 
         val psiType = typeElement.type
@@ -210,7 +213,7 @@ internal class KaFirJavaInteroperabilityComponent(
             }
         }
         val firTypeRef = javaTypeRef.resolveIfJavaType(analysisSession.firSession, javaTypeParameterStack, source = null)
-        val coneKotlinType = (firTypeRef as? FirResolvedTypeRef)?.type ?: return null
+        val coneKotlinType = (firTypeRef as? FirResolvedTypeRef)?.coneType ?: return null
         return coneKotlinType.asKtType()
     }
 
@@ -263,6 +266,7 @@ internal class KaFirJavaInteroperabilityComponent(
                         symbol.containingDeclaration as? KaPropertySymbol ?: symbol
                     }
                     is KaBackingFieldSymbol -> symbol.owningProperty
+                    is KaFirReceiverParameterSymbol -> symbol.owningCallableSymbol
                     else -> symbol
                 }
 
@@ -456,12 +460,15 @@ private fun ConeKotlinType.asPsiTypeElement(
     mode: TypeMappingMode,
     useSitePosition: PsiElement,
     allowErrorTypes: Boolean,
+    forceValueClassResolution: Boolean,
 ): PsiTypeElement? {
     if (this !is SimpleTypeMarker) return null
 
     if (!allowErrorTypes && (this is ConeErrorType)) return null
 
-    this.classLikeLookupTagIfAny?.toSymbol(session)?.lazyResolveToPhase(FirResolvePhase.STATUS)
+    if (forceValueClassResolution && !mode.needInlineClassWrapping) {
+        this.classLikeLookupTagIfAny?.toSymbol(session)?.lazyResolveToPhase(FirResolvePhase.STATUS)
+    }
 
     val signatureWriter = BothSignatureWriter(BothSignatureWriter.Mode.SKIP_CHECKS)
 
@@ -515,8 +522,8 @@ private class AnonymousTypesSubstitutor(
             firClassNode.resolvedSuperTypes.singleOrNull()?.let { return it }
         }
 
-        return if (type.nullability.isNullable) session.builtinTypes.nullableAnyType.type
-        else session.builtinTypes.anyType.type
+        return if (type.nullability.isNullable) session.builtinTypes.nullableAnyType.coneType
+        else session.builtinTypes.anyType.coneType
     }
 
     private fun ConeKotlinType.hasRecursiveTypeArgument(

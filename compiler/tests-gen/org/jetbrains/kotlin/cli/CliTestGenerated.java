@@ -613,6 +613,16 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/extraHelp.args");
     }
 
+    @TestMetadata("fastJarFsDisabledAfterK2.args")
+    public void testFastJarFsDisabledAfterK2() {
+      runTest("compiler/testData/cli/jvm/fastJarFsDisabledAfterK2.args");
+    }
+
+    @TestMetadata("fastJarFsEnabledBeforeK2.args")
+    public void testFastJarFsEnabledBeforeK2() {
+      runTest("compiler/testData/cli/jvm/fastJarFsEnabledBeforeK2.args");
+    }
+
     @TestMetadata("fileClassAndMultifileClassClash.args")
     public void testFileClassAndMultifileClassClash() {
       runTest("compiler/testData/cli/jvm/fileClassAndMultifileClassClash.args");
@@ -673,11 +683,6 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/firHello20WithFlag.args");
     }
 
-    @TestMetadata("firHello20WithOldLV.args")
-    public void testFirHello20WithOldLV() {
-      runTest("compiler/testData/cli/jvm/firHello20WithOldLV.args");
-    }
-
     @TestMetadata("firLightTreeOff.args")
     public void testFirLightTreeOff() {
       runTest("compiler/testData/cli/jvm/firLightTreeOff.args");
@@ -736,6 +741,16 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("functionReferenceWithDefaultValuesFeatureIsEnabledWithXXNewInference.args")
     public void testFunctionReferenceWithDefaultValuesFeatureIsEnabledWithXXNewInference() {
       runTest("compiler/testData/cli/jvm/functionReferenceWithDefaultValuesFeatureIsEnabledWithXXNewInference.args");
+    }
+
+    @TestMetadata("globalWarningSuppression_correct.args")
+    public void testGlobalWarningSuppression_correct() {
+      runTest("compiler/testData/cli/jvm/globalWarningSuppression_correct.args");
+    }
+
+    @TestMetadata("globalWarningSuppression_incorrect.args")
+    public void testGlobalWarningSuppression_incorrect() {
+      runTest("compiler/testData/cli/jvm/globalWarningSuppression_incorrect.args");
     }
 
     @TestMetadata("help.args")
@@ -1108,9 +1123,14 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/noReflect.args");
     }
 
-    @TestMetadata("noStdlib.args")
-    public void testNoStdlib() {
-      runTest("compiler/testData/cli/jvm/noStdlib.args");
+    @TestMetadata("noStdlibK1.args")
+    public void testNoStdlibK1() {
+      runTest("compiler/testData/cli/jvm/noStdlibK1.args");
+    }
+
+    @TestMetadata("noStdlibK2.args")
+    public void testNoStdlibK2() {
+      runTest("compiler/testData/cli/jvm/noStdlibK2.args");
     }
 
     @TestMetadata("nonExistingClassPathAndAnnotationsPath.args")
@@ -1501,6 +1521,11 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/js/libraryDirNotFound.args");
     }
 
+    @TestMetadata("noStdlib.args")
+    public void testNoStdlib() {
+      runTest("compiler/testData/cli/js/noStdlib.args");
+    }
+
     @TestMetadata("nonExistingKotlinHome.args")
     public void testNonExistingKotlinHome() {
       runTest("compiler/testData/cli/js/nonExistingKotlinHome.args");
@@ -1599,79 +1624,6 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("withLib.args")
     public void testWithLib() {
       runTest("compiler/testData/cli/js/withLib.args");
-    }
-  }
-
-  @TestMetadata("compiler/testData/cli/js-dce")
-  @TestDataPath("$PROJECT_ROOT")
-  @RunWith(JUnit3RunnerWithInners.class)
-  public static class Js_dce extends AbstractCliTest {
-    private void runTest(String testDataFilePath) {
-      KotlinTestUtils.runTest(this::doJsDceTest, this, testDataFilePath);
-    }
-
-    public void testAllFilesPresentInJs_dce() {
-      KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/cli/js-dce"), Pattern.compile("^(.+)\\.args$"), null, false);
-    }
-
-    @TestMetadata("dceExtraHelp.args")
-    public void testDceExtraHelp() {
-      runTest("compiler/testData/cli/js-dce/dceExtraHelp.args");
-    }
-
-    @TestMetadata("dceHelp.args")
-    public void testDceHelp() {
-      runTest("compiler/testData/cli/js-dce/dceHelp.args");
-    }
-
-    @TestMetadata("emptySources.args")
-    public void testEmptySources() {
-      runTest("compiler/testData/cli/js-dce/emptySources.args");
-    }
-
-    @TestMetadata("includeDeclarations.args")
-    public void testIncludeDeclarations() {
-      runTest("compiler/testData/cli/js-dce/includeDeclarations.args");
-    }
-
-    @TestMetadata("invalidFilename.args")
-    public void testInvalidFilename() {
-      runTest("compiler/testData/cli/js-dce/invalidFilename.args");
-    }
-
-    @TestMetadata("nonExistingSourcePath.args")
-    public void testNonExistingSourcePath() {
-      runTest("compiler/testData/cli/js-dce/nonExistingSourcePath.args");
-    }
-
-    @TestMetadata("notFile.args")
-    public void testNotFile() {
-      runTest("compiler/testData/cli/js-dce/notFile.args");
-    }
-
-    @TestMetadata("outputIsDirectory.args")
-    public void testOutputIsDirectory() {
-      runTest("compiler/testData/cli/js-dce/outputIsDirectory.args");
-    }
-
-    @TestMetadata("parseError.args")
-    public void testParseError() {
-      runTest("compiler/testData/cli/js-dce/parseError.args");
-    }
-
-    @TestMetadata("printReachability.args")
-    public void testPrintReachability() {
-      runTest("compiler/testData/cli/js-dce/printReachability.args");
-    }
-
-    @TestMetadata("simple.args")
-    public void testSimple() {
-      runTest("compiler/testData/cli/js-dce/simple.args");
-    }
-
-    @TestMetadata("withSourceMap.args")
-    public void testWithSourceMap() {
-      runTest("compiler/testData/cli/js-dce/withSourceMap.args");
     }
   }
 

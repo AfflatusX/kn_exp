@@ -31,7 +31,7 @@ internal fun FirExpression.unwrapToMoreUsefulExpression() = when (this) {
     else -> this
 }
 
-internal class TypeInfo(
+class TypeInfo(
     val type: ConeKotlinType,
     val notNullType: ConeKotlinType,
     val directType: ConeKotlinType,
@@ -43,14 +43,15 @@ internal class TypeInfo(
     val isClass: Boolean,
     val canHaveSubtypesAccordingToK1: Boolean,
 ) {
-    override fun toString() = "$type"
+    override fun toString(): String = "$type"
 }
 
 private val FirClassSymbol<*>.isBuiltin get() = isPrimitiveType() || classId == StandardClassIds.String || isEnumClass
 
 internal val TypeInfo.isNullableEnum get() = isEnumClass && type.isNullable
 
-internal val TypeInfo.isIdentityLess get() = isPrimitive || isValueClass
+internal fun TypeInfo.isIdentityLess(session: FirSession) =
+    session.identityLessPlatformDeterminer.isIdentityLess(this) || isValueClass
 
 internal val TypeInfo.isNotNullPrimitive get() = isPrimitive && !type.isNullable
 
@@ -66,7 +67,7 @@ internal fun ConeKotlinType.isClass(session: FirSession) = toRegularClassSymbol(
 internal fun ConeKotlinType.toTypeInfo(session: FirSession): TypeInfo {
     val bounds = collectUpperBounds().map { it.replaceArgumentsWithStarProjections() }
     val type = bounds.ifNotEmpty { ConeTypeIntersector.intersectTypes(session.typeContext, this) }?.fullyExpandedType(session)
-        ?: session.builtinTypes.nullableAnyType.type
+        ?: session.builtinTypes.nullableAnyType.coneType
     val notNullType = type.withNullability(ConeNullability.NOT_NULL, session.typeContext)
     val boundsSymbols = bounds.mapNotNull { it.toClassSymbol(session) }
 

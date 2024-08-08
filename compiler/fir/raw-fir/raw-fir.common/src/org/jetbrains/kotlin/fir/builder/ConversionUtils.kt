@@ -185,8 +185,8 @@ fun FirExpression.generateNotNullOrOther(
 
 fun FirExpression.generateLazyLogicalOperation(
     other: FirExpression, isAnd: Boolean, baseSource: KtSourceElement?,
-): FirBinaryLogicExpression {
-    return buildBinaryLogicExpression {
+): FirBooleanOperatorExpression {
+    return buildBooleanOperatorExpression {
         source = baseSource
         leftOperand = this@generateLazyLogicalOperation
         rightOperand = other
@@ -413,7 +413,7 @@ fun <T> FirPropertyBuilder.generateAccessorsByDelegate(
                 source = fakeSource
                 variance = Variance.INVARIANT
                 typeRef = buildResolvedTypeRef {
-                    type = ConeTypeParameterTypeImpl(it.symbol.toLookupTag(), false)
+                    coneType = ConeTypeParameterTypeImpl(it.symbol.toLookupTag(), false)
                 }
             }
         }
@@ -725,7 +725,7 @@ fun FirErrorTypeRef.wrapIntoArray(): FirResolvedTypeRef {
     val typeRef = this
     return buildResolvedTypeRef {
         source = typeRef.source
-        type = StandardClassIds.Array.constructClassLikeType(arrayOf(ConeKotlinTypeProjectionOut(typeRef.coneType)))
+        coneType = StandardClassIds.Array.constructClassLikeType(arrayOf(ConeKotlinTypeProjectionOut(typeRef.coneType)))
         delegatedTypeRef = typeRef.copyWithNewSourceKind(KtFakeSourceElementKind.ArrayTypeFromVarargParameter)
     }
 }

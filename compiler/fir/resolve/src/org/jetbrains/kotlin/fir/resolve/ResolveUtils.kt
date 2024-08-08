@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.types.ConstantValueKind
 import org.jetbrains.kotlin.types.SmartcastStability
 import org.jetbrains.kotlin.types.model.safeSubstitute
 import org.jetbrains.kotlin.utils.addIfNotNull
+import org.jetbrains.kotlin.utils.addToStdlib.applyIf
 import org.jetbrains.kotlin.utils.exceptions.errorWithAttachment
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -82,7 +83,7 @@ internal fun FirAnonymousFunction.computeReturnType(
     returnExpressions: Collection<FirAnonymousFunctionReturnExpressionInfo>,
 ): ConeKotlinType {
     val expandedExpectedReturnType = expectedReturnType?.fullyExpandedType(session)
-    val unitType = session.builtinTypes.unitType.type
+    val unitType = session.builtinTypes.unitType.coneType
     if (isLambda) {
         if (expandedExpectedReturnType?.isUnitOrFlexibleUnit == true) {
             // If the expected type is Unit or flexible Unit, always infer the lambda's type to Unit.
@@ -242,17 +243,23 @@ fun FirAnonymousFunction.constructFunctionTypeRef(session: FirSession, kind: Fun
             FunctionTypeKind.Function
         }
     }
-    val type = constructFunctionType(kindFromDeclaration ?: kind)
+
+    /**
+     * For lambdas, we drop reflect kinds here as lambda itself always has a non-reflect type
+     * For anonymous functions, this is handled in [org.jetbrains.kotlin.fir.resolve.inference.extractLambdaInfoFromFunctionType],
+     * see calculation of actualFunctionKind there.
+     */
+    val type = constructFunctionType(kindFromDeclaration ?: kind?.applyIf(isLambda) { nonReflectKind() })
     val source = this@constructFunctionTypeRef.source?.fakeElement(KtFakeSourceElementKind.ImplicitTypeRef)
     return if (diagnostic == null) {
         buildResolvedTypeRef {
             this.source = source
-            this.type = type
+            this.coneType = type
         }
     } else {
         buildErrorTypeRef {
             this.source = source
-            this.type = type
+            this.coneType = type
             this.diagnostic = diagnostic
         }
     }
@@ -333,7 +340,7 @@ fun BodyResolveComponents.buildResolvedQualifierForClass(
         if (classId.isLocal) {
             resultType = typeForQualifierByDeclaration(regularClass.fir, session, element = this@apply, file)
                 ?.also { replaceCanBeValue(true) }
-                ?: session.builtinTypes.unitType.type
+                ?: session.builtinTypes.unitType.coneType
         } else {
             setTypeOfQualifier(this@buildResolvedQualifierForClass)
         }
@@ -354,7 +361,7 @@ fun FirResolvedQualifier.setTypeOfQualifier(components: BodyResolveComponents) {
             }
         }
     }
-    this.resultType = components.session.builtinTypes.unitType.type
+    this.resultType = components.session.builtinTypes.unitType.coneType
 }
 
 internal fun typeForReifiedParameterReference(parameterReferenceBuilder: FirResolvedReifiedParameterReferenceBuilder): ConeLookupTagBasedType {
@@ -441,7 +448,7 @@ fun BodyResolveComponents.typeFromCallee(access: FirElement, calleeReference: Fi
             val possibleImplicitReceivers = implicitReceiverStack[labelName]
             buildResolvedTypeRef {
                 source = null
-                type = when {
+                coneType = when {
                     possibleImplicitReceivers.size >= 2 -> ConeErrorType(
                         ConeSimpleDiagnostic("Ambiguous this@$labelName", DiagnosticKind.AmbiguousLabel)
                     )
@@ -468,7 +475,7 @@ private fun BodyResolveComponents.typeFromSymbol(symbol: FirBasedSymbol<*>): Fir
         is FirClassifierSymbol<*> -> {
             buildResolvedTypeRef {
                 source = null
-                type = symbol.constructType(emptyArray(), isNullable = false)
+                coneType = symbol.constructType(emptyArray(), isNullable = false)
             }
         }
         else -> errorWithAttachment("Failed to extract type from symbol: ${symbol::class.java}") {
@@ -477,95 +484,45 @@ private fun BodyResolveComponents.typeFromSymbol(symbol: FirBasedSymbol<*>): Fir
     }
 }
 
-fun BodyResolveComponents.transformExpressionUsingSmartcastInfo(expression: FirExpression): FirExpression {
-    val (stability, typesFromSmartCast) = dataFlowAnalyzer.getTypeUsingSmartcastInfo(expression) ?: return expression
-
-    return transformExpressionUsingSmartcastInfo(expression, stability, typesFromSmartCast) ?: expression
-}
-
-fun BodyResolveComponents.transformWhenSubjectExpressionUsingSmartcastInfo(
-    whenSubjectExpression: FirWhenSubjectExpression,
-): FirExpression {
-    val (stability, typesFromSmartCast) = dataFlowAnalyzer.getTypeUsingSmartcastInfo(whenSubjectExpression)
-        ?: return whenSubjectExpression
-
-    return transformExpressionUsingSmartcastInfo(whenSubjectExpression, stability, typesFromSmartCast)
-        ?: whenSubjectExpression
-}
-
-fun BodyResolveComponents.transformDesugaredAssignmentValueUsingSmartcastInfo(
-    expression: FirDesugaredAssignmentValueReferenceExpression,
-): FirExpression {
-    val (stability, typesFromSmartCast) =
-        dataFlowAnalyzer.getTypeUsingSmartcastInfo(expression.expressionRef.value)
-            ?: return expression
-
-    return transformExpressionUsingSmartcastInfo(expression, stability, typesFromSmartCast)
-        ?: expression
-}
-
 private val ConeKotlinType.isKindOfNothing
     get() = lowerBoundIfFlexible().let { it.isNothing || it.isNullableNothing }
 
-private fun FirSmartCastExpressionBuilder.applyResultTypeRef() {
-    coneTypeOrNull =
-        if (smartcastStability == SmartcastStability.STABLE_VALUE)
-            smartcastType.coneTypeOrNull
-        else
-            originalExpression.resolvedType
-}
+fun BodyResolveComponents.transformExpressionUsingSmartcastInfo(expression: FirExpression): FirExpression {
+    val (stability, typesFromSmartCast) = dataFlowAnalyzer.getTypeUsingSmartcastInfo(expression) ?: return expression
 
-private fun <T : FirExpression> BodyResolveComponents.transformExpressionUsingSmartcastInfo(
-    expression: T,
-    smartcastStability: SmartcastStability,
-    typesFromSmartCast: MutableList<ConeKotlinType>,
-): FirSmartCastExpression? {
-    val originalType = expression.resolvedType.fullyExpandedType(session)
-    val allTypes = typesFromSmartCast.also {
-        if (originalType !is ConeStubType) {
-            it += originalType.fullyExpandedType(session)
-        }
-    }
-    if (allTypes.all { it is ConeDynamicType }) return null
+    val originalTypeWithAliases = expression.resolvedType
+    val originalType = originalTypeWithAliases.fullyExpandedType(session)
+
+    val allTypes = if (originalType !is ConeStubType) typesFromSmartCast + originalType else typesFromSmartCast
+    if (allTypes.all { it is ConeDynamicType }) return expression
+
     val intersectedType = ConeTypeIntersector.intersectTypes(session.typeContext, allTypes)
-    if (intersectedType == originalType && intersectedType !is ConeDynamicType) return null
-    val intersectedTypeRef = buildResolvedTypeRef {
-        source = expression.source?.fakeElement(KtFakeSourceElementKind.SmartCastedTypeRef)
-        type = intersectedType
-    }
-
-    // Example (1): if (x is String) { ... }, where x: dynamic
-    //   the dynamic type will "consume" all other, erasing information.
-    // Example (2): if (x == null) { ... },
-    //   we need to track the type without `Nothing?` so that resolution with this as receiver can go through properly.
-    if (
-        intersectedType.isKindOfNothing &&
-        !originalType.isNullableNothing &&
-        !originalType.isNothing &&
-        originalType !is ConeStubType
-    ) {
-        val reducedTypes = typesFromSmartCast.filterTo(mutableListOf()) { !it.isKindOfNothing }
-        val reducedIntersectedType = ConeTypeIntersector.intersectTypes(session.typeContext, reducedTypes)
-        val reducedIntersectedTypeRef = buildResolvedTypeRef {
-            source = expression.source?.fakeElement(KtFakeSourceElementKind.SmartCastedTypeRef)
-            type = reducedIntersectedType
-        }
-        return buildSmartCastExpression {
-            originalExpression = expression
-            smartcastType = intersectedTypeRef
-            smartcastTypeWithoutNullableNothing = reducedIntersectedTypeRef
-            this.typesFromSmartCast = typesFromSmartCast
-            this.smartcastStability = smartcastStability
-            applyResultTypeRef()
-        }
-    }
+    if (intersectedType == originalType && intersectedType !is ConeDynamicType) return expression
 
     return buildSmartCastExpression {
         originalExpression = expression
-        smartcastType = intersectedTypeRef
+        smartcastStability = stability
+        smartcastType = buildResolvedTypeRef {
+            source = expression.source?.fakeElement(KtFakeSourceElementKind.SmartCastedTypeRef)
+            coneType = intersectedType
+        }
+        // Example (1): if (x is String) { ... }, where x: dynamic
+        //   the dynamic type will "consume" all other, erasing information.
+        // Example (2): if (x == null) { ... },
+        //   we need to track the type without `Nothing?` so that resolution with this as receiver can go through properly.
+        if (
+            intersectedType.isKindOfNothing &&
+            !originalType.isNullableNothing &&
+            !originalType.isNothing &&
+            originalType !is ConeStubType
+        ) {
+            smartcastTypeWithoutNullableNothing = buildResolvedTypeRef {
+                source = expression.source?.fakeElement(KtFakeSourceElementKind.SmartCastedTypeRef)
+                coneType = ConeTypeIntersector.intersectTypes(session.typeContext, allTypes.filter { !it.isKindOfNothing })
+            }
+        }
         this.typesFromSmartCast = typesFromSmartCast
-        this.smartcastStability = smartcastStability
-        applyResultTypeRef()
+        coneTypeOrNull = if (stability == SmartcastStability.STABLE_VALUE) intersectedType else originalTypeWithAliases
     }
 }
 
@@ -621,7 +578,7 @@ fun BodyResolveComponents.initialTypeOfCandidate(candidate: Candidate): ConeKotl
 fun FirResolvedTypeRef.initialTypeOfCandidate(candidate: Candidate): ConeKotlinType {
     val system = candidate.system
     val resultingSubstitutor = system.buildCurrentSubstitutor()
-    return resultingSubstitutor.safeSubstitute(system, candidate.substitutor.substituteOrSelf(type)) as ConeKotlinType
+    return resultingSubstitutor.safeSubstitute(system, candidate.substitutor.substituteOrSelf(coneType)) as ConeKotlinType
 }
 
 /**
@@ -669,7 +626,7 @@ internal fun FirFunction.forbiddenNamedArgumentsTargetOrNull(originScope: FirTyp
             ForbiddenNamedArgumentsTarget.NON_KOTLIN_FUNCTION.takeUnless { symbol.hasOverrideThatAllowsNamedArguments(originScope) }
         }
 
-        FirDeclarationOrigin.BuiltIns -> ForbiddenNamedArgumentsTarget.INVOKE_ON_FUNCTION_TYPE
+        FirDeclarationOrigin.BuiltIns, FirDeclarationOrigin.BuiltInsFallback -> ForbiddenNamedArgumentsTarget.INVOKE_ON_FUNCTION_TYPE
         is FirDeclarationOrigin.Plugin -> null // TODO: figure out what to do with plugin generated functions
         else -> ForbiddenNamedArgumentsTarget.NON_KOTLIN_FUNCTION
     }

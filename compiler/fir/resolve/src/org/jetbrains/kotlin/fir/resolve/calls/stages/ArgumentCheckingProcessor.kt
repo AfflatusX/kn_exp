@@ -157,9 +157,6 @@ internal object ArgumentCheckingProcessor {
         if (expectedType == null) return
         val expression = atom.expression
 
-        // TODO: this check should be eliminated, KT-65085
-        if (expression is FirArrayLiteral && !expression.isResolved) return
-
         val argumentType = expression.resolvedType
         resolvePlainArgumentType(atom, argumentType, useNullableArgumentType)
     }
@@ -351,16 +348,16 @@ internal object ArgumentCheckingProcessor {
         candidate.addPostponedAtom(resolvedArgument)
 
         if (expectedType != null) {
-            val parameters = resolvedArgument.parameters
+            val parameters = resolvedArgument.parameterTypes
             val functionTypeKind = context.session.functionTypeService.extractSingleSpecialKindForFunction(anonymousFunction.symbol)
                 ?: resolvedArgument.expectedFunctionTypeKind?.nonReflectKind()
                 ?: FunctionTypeKind.Function
             val lambdaType = createFunctionType(
                 functionTypeKind,
                 parameters,
-                resolvedArgument.receiver,
+                resolvedArgument.receiverType,
                 resolvedArgument.returnType,
-                contextReceivers = resolvedArgument.contextReceivers,
+                contextReceivers = resolvedArgument.contextReceiverTypes,
             )
 
             val position = ConeArgumentConstraintPosition(resolvedArgument.anonymousFunction)
@@ -444,7 +441,7 @@ internal object ArgumentCheckingProcessor {
             .fastCorrespondingSupertypes(expectedFunctionType.typeConstructor())
             ?.firstOrNull() as? ConeKotlinType ?: return null
 
-        val typeArguments = functionType.typeArguments.map { it.type ?: session.builtinTypes.nullableAnyType.type }.ifEmpty { return null }
+        val typeArguments = functionType.typeArguments.map { it.type ?: session.builtinTypes.nullableAnyType.coneType }.ifEmpty { return null }
         return createFunctionType(
             kind = expectedTypeKind,
             parameters = typeArguments.subList(0, typeArguments.lastIndex),

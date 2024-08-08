@@ -1011,39 +1011,28 @@ class ControlFlowGraphBuilder {
 
     // ----------------------------------- Boolean operators -----------------------------------
 
-    fun enterBinaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression): CFGNode<FirBinaryLogicExpression> {
-        return when (binaryLogicExpression.kind) {
-            LogicOperationKind.AND -> createBinaryAndEnterNode(binaryLogicExpression)
-            LogicOperationKind.OR -> createBinaryOrEnterNode(binaryLogicExpression)
-        }.also { addNewSimpleNode(it) }
+    fun enterBooleanOperatorExpression(booleanOperatorExpression: FirBooleanOperatorExpression): CFGNode<FirBooleanOperatorExpression> {
+        return createBooleanOperatorEnterNode(booleanOperatorExpression).also { addNewSimpleNode(it) }
     }
 
-    fun exitLeftBinaryLogicExpressionArgument(
-        binaryLogicExpression: FirBinaryLogicExpression,
-    ): Pair<CFGNode<FirBinaryLogicExpression>, CFGNode<FirBinaryLogicExpression>> {
-        val (leftExitNode, rightEnterNode) = when (binaryLogicExpression.kind) {
-            LogicOperationKind.AND ->
-                createBinaryAndExitLeftOperandNode(binaryLogicExpression) to createBinaryAndEnterRightOperandNode(binaryLogicExpression)
-            LogicOperationKind.OR ->
-                createBinaryOrExitLeftOperandNode(binaryLogicExpression) to createBinaryOrEnterRightOperandNode(binaryLogicExpression)
-        }
+    fun exitLeftBooleanOperatorExpressionArgument(
+        booleanOperatorExpression: FirBooleanOperatorExpression,
+    ): Pair<CFGNode<FirBooleanOperatorExpression>, CFGNode<FirBooleanOperatorExpression>> {
+        val (leftExitNode, rightEnterNode) = createBooleanOperatorExitLeftOperandNode(booleanOperatorExpression) to createBooleanOperatorEnterRightOperandNode(booleanOperatorExpression)
         addNewSimpleNode(leftExitNode)
         lastNodes.push(leftExitNode) // to create an exit edge later
         val rhsNeverExecuted =
-            binaryLogicExpression.leftOperand.booleanLiteralValue == (binaryLogicExpression.kind != LogicOperationKind.AND)
+            booleanOperatorExpression.leftOperand.booleanLiteralValue == (booleanOperatorExpression.kind != LogicOperationKind.AND)
         addNewSimpleNode(rightEnterNode, isDead = rhsNeverExecuted)
         return leftExitNode to rightEnterNode
     }
 
-    fun exitBinaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression): AbstractBinaryExitNode<FirBinaryLogicExpression> {
-        val exitNode = when (binaryLogicExpression.kind) {
-            LogicOperationKind.AND -> createBinaryAndExitNode(binaryLogicExpression)
-            LogicOperationKind.OR -> createBinaryOrExitNode(binaryLogicExpression)
-        }
+    fun exitBooleanOperatorExpression(booleanOperatorExpression: FirBooleanOperatorExpression): BooleanOperatorExitNode {
         val rightNode = lastNodes.pop()
         val leftNode = lastNodes.pop()
+        val exitNode = createBooleanOperatorExitNode(booleanOperatorExpression, leftNode, rightNode)
         val rhsAlwaysExecuted =
-            binaryLogicExpression.leftOperand.booleanLiteralValue == (binaryLogicExpression.kind == LogicOperationKind.AND)
+            booleanOperatorExpression.leftOperand.booleanLiteralValue == (booleanOperatorExpression.kind == LogicOperationKind.AND)
         if (rhsAlwaysExecuted) {
             addEdge(rightNode, exitNode)
         } else {
@@ -1053,8 +1042,6 @@ class ControlFlowGraphBuilder {
         lastNodes.push(exitNode)
         return exitNode
     }
-
-    private val FirExpression.booleanLiteralValue: Boolean? get() = (this as? FirLiteralExpression)?.value as? Boolean?
 
     // ----------------------------------- Try-catch-finally -----------------------------------
 
@@ -1485,7 +1472,6 @@ class ControlFlowGraphBuilder {
         }
 
         val lhsIsNotNullNode = createElvisLhsIsNotNullNode(elvisExpression).also {
-            // TODO Refactor annotation arguments phase to not build CFG so that we can use resolvedType instead, see KT-61834
             @OptIn(UnresolvedExpressionTypeAccess::class)
             val lhsIsNull = elvisExpression.lhs.coneTypeOrNull?.isNullableNothing == true
             addEdge(lhsExitNode, it, isDead = lhsIsNull)
@@ -1503,9 +1489,16 @@ class ControlFlowGraphBuilder {
 
     fun exitElvis(lhsIsNotNull: Boolean, callCompleted: Boolean): ElvisExitNode {
         val exitNode = exitElvisExpressionNodes.pop()
-        addNewSimpleNode(exitNode, isDead = lhsIsNotNull)
+        val returnsNothing = callCompleted && exitNode.fir.hasNothingType
+        if (returnsNothing) {
+            addNonSuccessfullyTerminatingNode(exitNode)
+        } else {
+            addNewSimpleNode(exitNode, isDead = lhsIsNotNull)
+        }
         mergeDataFlowFromPostponedLambdas(exitNode, callCompleted)
-        exitNode.updateDeadStatus()
+        if (!returnsNothing) {
+            exitNode.updateDeadStatus()
+        }
         return exitNode
     }
 
@@ -1619,7 +1612,6 @@ val FirControlFlowGraphOwner.isUsedInControlFlowGraphBuilderForScript: Boolean
         else -> false
     }
 
-// TODO Refactor annotation arguments phase to not build CFG so that we can use resolvedType instead, see KT-61834
 @OptIn(UnresolvedExpressionTypeAccess::class)
 private val FirExpression.hasNothingType: Boolean
     get() = coneTypeOrNull?.isNothing == true
@@ -1637,4 +1629,4 @@ fun FirAnonymousFunction.lastStatement(): FirStatement? {
     return last.unwrapBlocks()
 }
 
-
+val FirExpression.booleanLiteralValue: Boolean? get() = (this as? FirLiteralExpression)?.value as? Boolean?

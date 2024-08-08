@@ -162,7 +162,9 @@ abstract class FrameworkTestBase : AbstractNativeSimpleTest() {
                 framework1Dir.resolve("test.kt"),
                 sharedDir.resolve("shared.kt"),
             ),
-            freeCompilerArgs = TestCompilerArgs(freeCompilerArgs + "-Xbinary=bundleId=$moduleNameFirst"),
+            freeCompilerArgs = TestCompilerArgs(
+                freeCompilerArgs + "-module-name" + moduleNameFirst + "-Xbinary=bundleId=$moduleNameFirst"
+            ),
             checks = checks,
         )
         testCompilationFactory.testCaseToObjCFrameworkCompilation(testCase1, testRunSettings).result.assertSuccess()
@@ -175,7 +177,9 @@ abstract class FrameworkTestBase : AbstractNativeSimpleTest() {
                 framework2Dir.resolve("second.kt"),
                 framework2Dir.resolve("test.kt"),
                 sharedDir.resolve("shared.kt"),
-            ), freeCompilerArgs = TestCompilerArgs(freeCompilerArgs + "-Xbinary=bundleId=$moduleNameSecond")
+            ), freeCompilerArgs = TestCompilerArgs(
+                freeCompilerArgs + "-module-name" + moduleNameSecond + "-Xbinary=bundleId=$moduleNameSecond"
+            )
         )
         testCompilationFactory.testCaseToObjCFrameworkCompilation(testCase2, testRunSettings).result.assertSuccess()
 
@@ -508,7 +512,9 @@ abstract class FrameworkTestBase : AbstractNativeSimpleTest() {
             extras,
             moduleName,
             listOf(testSuiteDir.resolve(name).resolve("$name.kt")),
-            TestCompilerArgs(testCompilerArgs + listOf("-Xbinary=bundleId=$name")),
+            TestCompilerArgs(
+                testCompilerArgs + listOf("-module-name", moduleName, "-Xbinary=bundleId=$name")
+            ),
             givenDependencies,
             checks = checks,
         )

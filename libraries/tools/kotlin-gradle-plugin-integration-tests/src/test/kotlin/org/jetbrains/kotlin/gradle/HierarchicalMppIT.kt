@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.gradle.plugin.sources.DefaultKotlinSourceSet
 import org.jetbrains.kotlin.gradle.testbase.*
 import org.jetbrains.kotlin.gradle.util.checkedReplace
 import org.jetbrains.kotlin.gradle.util.modify
+import org.jetbrains.kotlin.test.TestMetadata
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.condition.OS
 import org.junit.jupiter.api.io.TempDir
@@ -222,6 +223,7 @@ open class HierarchicalMppIT : KGPBaseTest() {
     }
 
     @GradleTest
+    @TestMetadata("hierarchical-mpp-published-modules")
     @DisplayName("Check that only composite metadata artifacts are transformed")
     fun testOnlyCompositeMetadataArtifactsTransformed(gradleVersion: GradleVersion, @TempDir tempDir: Path) {
         val buildOptions = defaultBuildOptions.copy(logLevel = LogLevel.DEBUG)
@@ -240,7 +242,7 @@ open class HierarchicalMppIT : KGPBaseTest() {
             gradleVersion,
             localRepoDir = tempDir,
             buildOptions = buildOptions
-        ).run {
+        ) {
             build("publish") {
                 assertEquals(
                     setOf(
@@ -257,7 +259,7 @@ open class HierarchicalMppIT : KGPBaseTest() {
             gradleVersion,
             localRepoDir = tempDir,
             buildOptions = buildOptions
-        ).run {
+        ) {
             build("publish") {
                 assertEquals(
                     setOf(
@@ -275,7 +277,7 @@ open class HierarchicalMppIT : KGPBaseTest() {
             gradleVersion,
             localRepoDir = tempDir,
             buildOptions = buildOptions
-        ).run {
+        ) {
             testDependencyTransformations {
                 assertEquals(
                     setOf(
@@ -283,11 +285,7 @@ open class HierarchicalMppIT : KGPBaseTest() {
                         "my-lib-bar-metadata-1.0-all.jar",
                         "third-party-lib-metadata-1.0.jar",
                         "kotlin-stdlib-${buildOptions.kotlinVersion}-all.jar",
-                        "kotlin-dom-api-compat-${buildOptions.kotlinVersion}.klib",
-                        "kotlin-stdlib-js-${buildOptions.kotlinVersion}.klib",
                         "kotlin-test-${buildOptions.kotlinVersion}-all.jar",
-                        "kotlin-test-js-${buildOptions.kotlinVersion}.klib",
-                        "kotlin-test-junit-${buildOptions.kotlinVersion}.jar",
                     ).toSortedSet(),
                     transformedArtifacts().toSortedSet()
                 )
@@ -739,7 +737,6 @@ open class HierarchicalMppIT : KGPBaseTest() {
             build(":my-lib-foo:compileJvmAndJsMainKotlinMetadata")
         }
 
-    @GradleTestVersions(minVersion = TestVersions.Gradle.G_7_0)
     @GradleTest
     @DisplayName("HMPP dependencies in js tests")
     fun testHmppDependenciesInJsTests(gradleVersion: GradleVersion, @TempDir tempDir: Path) {
@@ -1164,18 +1161,6 @@ open class HierarchicalMppIT : KGPBaseTest() {
     }
 
     @GradleTest
-    @GradleTestVersions(maxVersion = TestVersions.Gradle.G_7_1)
-    @DisplayName("KT-51940: Test ArtifactCollection.getResolvedArtifactsCompat with Gradle earlier than 7.4")
-    fun `test getResolvedArtifactsCompat with Gradle earlier than 7_4`(gradleVersion: GradleVersion) {
-        project("kt-51940-hmpp-resolves-configurations-during-configuration", gradleVersion = gradleVersion) {
-            build("assemble", "--dry-run") {
-                assertOutputContains("Configuration Resolved")
-            }
-        }
-    }
-
-    @GradleTest
-    @GradleTestVersions(minVersion = TestVersions.Gradle.G_7_4)
     @DisplayName("KT-51940: Configurations should not resolved during configuration phase")
     fun `test configurations should not resolved during configuration phase`(gradleVersion: GradleVersion) {
         project("kt-51940-hmpp-resolves-configurations-during-configuration", gradleVersion = gradleVersion) {
@@ -1240,7 +1225,6 @@ open class HierarchicalMppIT : KGPBaseTest() {
     }
 
     @GradleTest
-    @GradleTestVersions(minVersion = TestVersions.Gradle.G_7_0)
     fun `test type safe project accessors with KotlinDependencyHandler`(gradleVersion: GradleVersion) {
         project("mpp-project-with-type-safe-accessors", gradleVersion) {
             build("help") {
@@ -1321,6 +1305,18 @@ open class HierarchicalMppIT : KGPBaseTest() {
             buildGradleKts.modify {
                 "import ${DefaultKotlinSourceSet::class.qualifiedName}\n" + it + "\n" + """
                 val $testTaskName by tasks.creating {
+                // adding psm generation if needed
+                // for that purpose we setting all Resolvable Dependencies Metadata Configurations as inputs for report task
+                        kotlin.sourceSets
+                        .map { it.name }
+                        .forEach { sourceSetName ->
+                            val configurationName = sourceSetName + "ResolvableDependenciesMetadata"
+                            inputs.files(project.provider {
+                                project.configurations.named(configurationName).get().incoming.artifactView {
+                                    isLenient = true
+                                }.artifacts.artifactFiles
+                            })
+                        }
                     doFirst {
                         for (scope in listOf("api", "implementation", "compileOnly", "runtimeOnly")) {
                             println("========\n${'$'}scope\n")

@@ -105,7 +105,7 @@ internal class StubBasedFirTypeDeserializer(
         return buildResolvedTypeRef {
             source = KtRealPsiSourceElement(typeReference)
             annotations += annotationDeserializer.loadAnnotations(typeReference)
-            type = type(typeReference, annotations.computeTypeAttributes(moduleData.session, shouldExpandTypeAliases = false))
+            coneType = type(typeReference, annotations.computeTypeAttributes(moduleData.session, shouldExpandTypeAliases = false))
         }
     }
 
@@ -116,7 +116,7 @@ internal class StubBasedFirTypeDeserializer(
             parent.functionTypeParameterName?.let { paramName ->
                 annotations += buildAnnotation {
                     annotationTypeRef = buildResolvedTypeRef {
-                        type = StandardNames.FqNames.parameterNameClassId.toLookupTag()
+                        coneType = StandardNames.FqNames.parameterNameClassId.toLookupTag()
                             .constructClassType(ConeTypeProjection.EMPTY_ARRAY, isNullable = false)
                     }
                     this.argumentMapping = buildAnnotationArgumentMapping {
@@ -225,7 +225,7 @@ internal class StubBasedFirTypeDeserializer(
     fun FirClassLikeSymbol<*>.typeParameters(): List<FirTypeParameterSymbol> =
         (fir as? FirTypeParameterRefsOwner)?.typeParameters?.map { it.symbol }.orEmpty()
 
-    private fun simpleType(typeReference: KtTypeReference, attributes: ConeAttributes): ConeSimpleKotlinType? {
+    private fun simpleType(typeReference: KtTypeReference, attributes: ConeAttributes): ConeRigidType? {
         val constructor = typeSymbol(typeReference) ?: return null
         val isNullable = typeReference.typeElement is KtNullableType
         if (constructor is ConeTypeParameterLookupTag) {

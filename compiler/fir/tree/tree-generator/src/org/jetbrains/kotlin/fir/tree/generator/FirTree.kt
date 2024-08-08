@@ -183,7 +183,7 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(block)
     }
 
-    val binaryLogicExpression: Element by element(Expression) {
+    val booleanOperatorExpression: Element by element(Expression) {
         needTransformOtherChildren()
 
         parent(expression)
@@ -1127,7 +1127,7 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(typeRef)
         parent(typeRefMarkerType)
 
-        +field("type", coneKotlinTypeType)
+        +field("coneType", coneKotlinTypeType)
         +field("delegatedTypeRef", typeRef, nullable = true, isChild = false)
     }
 
@@ -1215,7 +1215,7 @@ object FirTree : AbstractFirTreeBuilder() {
         +field("usedAsExpression", boolean)
     }
 
-    val typeProjection: Element by element(TypeRefElement)
+    val typeProjection: Element by sealedElement(TypeRefElement)
 
     val typeProjectionWithVariance: Element by element(TypeRefElement) {
         parent(typeProjection)

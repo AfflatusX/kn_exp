@@ -281,6 +281,7 @@ fun ConeKotlinType.classSymbolOrUpperBound(session: FirSession): FirClassSymbol<
     return when (this) {
         is ConeSimpleKotlinType -> toClassSymbol(session)
         is ConeFlexibleType -> upperBound.toClassSymbol(session)
+        is ConeDefinitelyNotNullType -> original.toClassSymbol(session)
     }
 }
 
@@ -295,7 +296,7 @@ fun FirDeclaration.excludeFromJsExport(session: FirSession) {
     val jsExportIgnoreAnnotationCall = buildAnnotationCall {
         argumentList = FirEmptyArgumentList
         annotationTypeRef = buildResolvedTypeRef {
-            type = jsExportIgnoreAnnotation.defaultType()
+            coneType = jsExportIgnoreAnnotation.defaultType()
         }
         calleeReference = buildResolvedNamedReference {
             name = jsExportIgnoreAnnotation.name

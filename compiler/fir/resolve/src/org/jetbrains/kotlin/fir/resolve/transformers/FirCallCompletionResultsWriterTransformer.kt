@@ -124,7 +124,7 @@ class FirCallCompletionResultsWriterTransformer(
         val type = if (declaration is FirCallableDeclaration) {
             val calculated = typeCalculator.tryCalculateReturnType(declaration)
             if (calculated !is FirErrorTypeRef) {
-                calculated.type
+                calculated.coneType
             } else {
                 ConeErrorType(calculated.diagnostic)
             }
@@ -193,10 +193,7 @@ class FirCallCompletionResultsWriterTransformer(
         }
 
         qualifiedAccessExpression.replaceConeTypeOrNull(type)
-
-        if (declaration !is FirErrorFunction) {
-            qualifiedAccessExpression.replaceTypeArguments(typeArguments)
-        }
+        qualifiedAccessExpression.replaceTypeArguments(typeArguments)
 
         runPCLARelatedTasksForCandidate(subCandidate)
 
@@ -538,7 +535,12 @@ class FirCallCompletionResultsWriterTransformer(
         return buildSamConversionExpression {
             expression = this@wrapInSamExpression
             coneTypeOrNull = expectedArgumentType.withNullability(resolvedType.nullability, session.typeContext)
-                .let { typeApproximator.approximateToSuperType(it, TypeApproximatorConfiguration.TypeArgumentApproximation) ?: it }
+                .let {
+                    typeApproximator.approximateToSuperType(
+                        it,
+                        TypeApproximatorConfiguration.TypeArgumentApproximationAfterCompletionInK2
+                    ) ?: it
+                }
             source = this@wrapInSamExpression.source?.fakeElement(KtFakeSourceElementKind.SamConversion)
         }
     }
@@ -631,7 +633,7 @@ class FirCallCompletionResultsWriterTransformer(
         calleeReference: FirNamedReferenceWithCandidate,
         typeRef: FirResolvedTypeRef,
     ): D {
-        val resultType = typeRef.type.substituteType(calleeReference.candidate)
+        val resultType = typeRef.coneType.substituteType(calleeReference.candidate)
         replaceConeTypeOrNull(resultType)
         session.lookupTracker?.recordTypeResolveAsLookup(resultType, source, context.file.source)
         return this
@@ -852,7 +854,7 @@ class FirCallCompletionResultsWriterTransformer(
                         val typeRef = argument.typeRef as FirResolvedTypeRef
                         buildTypeProjectionWithVariance {
                             source = sourceForTypeArgument
-                            this.typeRef = if (typeRef.type is ConeErrorType) typeRef else typeRef.withReplacedConeType(type)
+                            this.typeRef = if (typeRef.coneType.fullyExpandedType(session) is ConeErrorType) typeRef else typeRef.withReplacedConeType(type)
                             variance = argument.variance
                         }
                     }
@@ -874,7 +876,17 @@ class FirCallCompletionResultsWriterTransformer(
         // We must ensure that all extra type arguments are preserved in the result, so that they can still be resolved later (e.g. for
         // navigation in the IDE).
         return if (typeArguments.size < access.typeArguments.size) {
-            typeArguments + access.typeArguments.subList(typeArguments.size, access.typeArguments.size)
+            typeArguments + access.typeArguments.subList(typeArguments.size, access.typeArguments.size).map {
+                if (it !is FirPlaceholderProjection) it
+                else buildTypeProjectionWithVariance {
+                    source = it.source
+                    typeRef = buildErrorTypeRef {
+                        source = it.source
+                        diagnostic = ConeSimpleDiagnostic("Unmapped placeholder type argument")
+                    }
+                    variance = Variance.INVARIANT
+                }
+            }
         } else typeArguments
     }
 
@@ -909,7 +921,7 @@ class FirCallCompletionResultsWriterTransformer(
             val substitution = candidate.substitutor.substituteOrSelf(typeParameter)
             finallySubstituteOrSelf(substitution).let { substitutedType ->
                 typeApproximator.approximateToSuperType(
-                    substitutedType, TypeApproximatorConfiguration.TypeArgumentApproximation,
+                    substitutedType, TypeApproximatorConfiguration.TypeArgumentApproximationAfterCompletionInK2,
                 ) ?: substitutedType
             }
         }
@@ -1184,7 +1196,7 @@ class FirCallCompletionResultsWriterTransformer(
                     TypeApproximatorConfiguration.IntermediateApproximationToSupertypeAfterCompletionInK2
                 )
                     ?: it
-            } ?: expectedArrayElementType ?: session.builtinTypes.nullableAnyType.type
+            } ?: expectedArrayElementType ?: session.builtinTypes.nullableAnyType.coneType
         arrayLiteral.resultType =
             arrayElementType.createArrayType(createPrimitiveArrayTypeIfPossible = expectedArrayType?.fullyExpandedType(session)?.isPrimitiveArray == true)
         return arrayLiteral

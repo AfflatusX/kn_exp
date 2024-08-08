@@ -30,6 +30,12 @@ public class SwiftExportExecutionTestGenerated extends AbstractNativeSwiftExport
   }
 
   @Test
+  @TestMetadata("char")
+  public void testChar() {
+    runTest("native/native.tests/testData/SwiftExport/char/");
+  }
+
+  @Test
   @TestMetadata("never_type")
   public void testNever_type() {
     runTest("native/native.tests/testData/SwiftExport/never_type/");
@@ -51,5 +57,11 @@ public class SwiftExportExecutionTestGenerated extends AbstractNativeSwiftExport
   @TestMetadata("smokes")
   public void testSmokes() {
     runTest("native/native.tests/testData/SwiftExport/smokes/");
+  }
+
+  @Test
+  @TestMetadata("specialTypes")
+  public void testSpecialTypes() {
+    runTest("native/native.tests/testData/SwiftExport/specialTypes/");
   }
 }

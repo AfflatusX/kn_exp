@@ -53,30 +53,6 @@ abstract class ResolutionStage {
     abstract suspend fun check(candidate: Candidate, callInfo: CallInfo, sink: CheckerSink, context: ResolutionContext)
 }
 
-internal object CheckExplicitReceiverConsistency : ResolutionStage() {
-    override suspend fun check(candidate: Candidate, callInfo: CallInfo, sink: CheckerSink, context: ResolutionContext) {
-        val receiverKind = candidate.explicitReceiverKind
-        val explicitReceiver = callInfo.explicitReceiver
-        when (receiverKind) {
-            NO_EXPLICIT_RECEIVER -> {
-                if (explicitReceiver != null && explicitReceiver !is FirResolvedQualifier && !explicitReceiver.isSuperReferenceExpression()) {
-                    return sink.yieldDiagnostic(InapplicableWrongReceiver(actualType = explicitReceiver.resolvedType))
-                }
-            }
-            EXTENSION_RECEIVER, DISPATCH_RECEIVER -> {
-                if (explicitReceiver == null) {
-                    return sink.yieldDiagnostic(InapplicableWrongReceiver())
-                }
-            }
-            BOTH_RECEIVERS -> {
-                if (explicitReceiver == null) {
-                    return sink.yieldDiagnostic(InapplicableWrongReceiver())
-                }
-            }
-        }
-    }
-}
-
 object CheckExtensionReceiver : ResolutionStage() {
     override suspend fun check(candidate: Candidate, callInfo: CallInfo, sink: CheckerSink, context: ResolutionContext) {
         val callSite = callInfo.callSite
@@ -492,13 +468,6 @@ private fun FirExpression?.isSuperCall(): Boolean {
     return calleeReference is FirSuperReference
 }
 
-private fun FirExpression.isSuperReferenceExpression(): Boolean {
-    return if (this is FirQualifiedAccessExpression) {
-        val calleeReference = calleeReference
-        calleeReference is FirSuperReference
-    } else false
-}
-
 internal object MapArguments : ResolutionStage() {
     override suspend fun check(candidate: Candidate, callInfo: CallInfo, sink: CheckerSink, context: ResolutionContext) {
         val symbol = candidate.symbol as? FirFunctionSymbol<*> ?: return sink.reportDiagnostic(HiddenCandidate)
@@ -786,7 +755,7 @@ internal object ProcessDynamicExtensionAnnotation : ResolutionStage() {
         if (candidate.symbol.origin === FirDeclarationOrigin.DynamicScope) return
         val extensionReceiver = candidate.chosenExtensionReceiver?.expression ?: return
         val argumentIsDynamic = extensionReceiver.resolvedType is ConeDynamicType
-        val parameterIsDynamic = (candidate.symbol as? FirCallableSymbol)?.resolvedReceiverTypeRef?.type is ConeDynamicType
+        val parameterIsDynamic = (candidate.symbol as? FirCallableSymbol)?.resolvedReceiverTypeRef?.coneType is ConeDynamicType
         if (parameterIsDynamic != argumentIsDynamic ||
             parameterIsDynamic && !candidate.symbol.hasAnnotation(DYNAMIC_EXTENSION_ANNOTATION_CLASS_ID, context.session)
         ) {
@@ -863,7 +832,7 @@ internal object CheckLambdaAgainstTypeVariableContradiction : ResolutionStage() 
 
         // We use Function<Nothing> as our representative type for "some function type".
         val lambdaType = StandardClassIds.Function
-            .constructClassLikeType(arrayOf(context.session.builtinTypes.nothingType.type))
+            .constructClassLikeType(arrayOf(context.session.builtinTypes.nothingType.coneType))
 
         var shouldReportError = false
 
